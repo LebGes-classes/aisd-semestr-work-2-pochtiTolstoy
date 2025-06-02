@@ -7,12 +7,22 @@
 
 #define SF_WIDTH 1900
 #define SF_HEIGHT 1000
+#define SF_PADDING 100
+#define SF_POINT_RADIUS 6.0
+#define POINTS_NUMBER 50
+#define EPS 1e-6
 
 struct Point {
   double x_;
   double y_;
 
   Point(double x, double y) : x_{x}, y_{y} {}
+
+  bool operator==(const Point &other) const {
+    return std::abs(x_ - other.x_) < EPS && std::abs(y_ - other.y_) < EPS;
+  }
+
+  bool operator!=(const Point &other) const { return !(*this == other); }
 };
 
 class PointSet {
@@ -30,7 +40,7 @@ public:
     }
   }
 
-  std::vector<Point> &getSet() { return set_; }
+  const std::vector<Point> &getSet() { return set_; }
 
 private:
   std::vector<Point> set_;
@@ -42,9 +52,85 @@ private:
   }
 };
 
+class ConvexHull {
+public:
+  ConvexHull(const std::vector<Point> &set) : set_{set} {
+    findJarvisConvexHull();
+  }
+
+  std::vector<Point> getConvexHull() {
+    if (size_ > set_.size()) {
+      throw std::out_of_range("Convex hull size out of set range!");
+    }
+    std::vector<Point> result(set_.begin(), set_.begin() + size_);
+    return result;
+  }
+
+private:
+  std::vector<Point> set_;
+  size_t size_;
+
+  void findJarvisConvexHull() {
+    const size_t n = set_.size();
+    if (n < 3) {
+      this->size_ = n;
+      return;
+    }
+
+    size_t entry_idx = getEntryPointIdx();
+    std::swap(set_[0], set_[entry_idx]);
+    Point p0 = set_[0];
+    Point pi = p0;
+    int k = -1;
+    do {
+      ++k;
+      for (size_t i = k; i != set_.size(); ++i) {
+        if (JarvisCompare(set_[i], set_[k], pi)) {
+          std::swap(set_[i], set_[k]);
+        }
+      }
+      pi = set_[k];
+    } while (pi != p0);
+
+    this->size_ = k + 1;
+  }
+
+  size_t getEntryPointIdx() {
+    size_t res = 0;
+    for (size_t i = 1; i != set_.size(); ++i) {
+      if (set_[i].y_ < set_[res].y_ ||
+          (std::abs(set_[i].y_ - set_[res].y_) < EPS &&
+           set_[i].x_ < set_[res].x_)) {
+        res = i;
+      }
+    }
+    return res;
+  }
+
+  bool JarvisCompare(const Point &candidate, const Point &current_candidate,
+                     const Point &current_point) {
+    double cross = crossProduct(current_point, current_candidate, candidate);
+    if (std::abs(cross) < EPS) {
+      return (distanceSquared(current_point, candidate) >
+              distanceSquared(current_point, current_candidate));
+    }
+    return cross > 0;
+  }
+
+  double crossProduct(const Point &a, const Point &b, const Point &c) {
+    return (b.x_ - a.x_) * (c.y_ - a.y_) - (b.y_ - a.y_) * (c.x_ - a.x_);
+  }
+
+  double distanceSquared(const Point &a, const Point &b) {
+    double dx = a.x_ - b.x_;
+    double dy = a.y_ - b.y_;
+    return dx * dx - dy * dy;
+  }
+};
+
 std::vector<Point> generate_points(size_t size, double width = SF_WIDTH,
                                    double height = SF_HEIGHT,
-                                   double padding = 100.0) {
+                                   double padding = SF_PADDING) {
   if (size < 3) {
     throw std::invalid_argument("Should be generated at least 3 points!");
   }
@@ -74,7 +160,21 @@ std::vector<Point> generate_points(size_t size, double width = SF_WIDTH,
 }
 
 int main() {
-  PointSet pointSet(generate_points(50));
+  // PointSet pointSet(generate_points(POINTS_NUMBER));
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_int_distribution<int> pt_dist(3, 50);
+  PointSet pointSet(generate_points(pt_dist(gen)));
+  ConvexHull hull(pointSet.getSet());
+  const auto &vec_hull = hull.getConvexHull();
+  sf::VertexArray lines(sf::LineStrip, vec_hull.size() + 1); // +1 ???
+  if (!vec_hull.empty()) {
+    for (size_t i = 0; i < vec_hull.size(); ++i) {
+      lines[i] = sf::Vertex(sf::Vector2f(vec_hull[i].x_, vec_hull[i].y_),
+                            sf::Color(234, 239, 239));
+    }
+    lines[vec_hull.size()] = sf::Vector2f(vec_hull[0].x_, vec_hull[0].y_);
+  }
 
   // SFML
   sf::ContextSettings settings;
@@ -85,7 +185,7 @@ int main() {
                           "Convex Hull - SFML", sf::Style::Default, settings);
 
   std::vector<sf::CircleShape> draw_points_vec;
-  constexpr double point_radius = 8.0;
+  constexpr double point_radius = SF_POINT_RADIUS;
   for (const auto &point : pointSet.getSet()) {
     sf::CircleShape draw_point(point_radius);
     draw_point.setPointCount(100);
@@ -97,8 +197,9 @@ int main() {
     draw_points_vec.push_back(draw_point);
   }
 
-  sf::RectangleShape paddingArea(sf::Vector2f(SF_WIDTH - 200, SF_HEIGHT - 200));
-  paddingArea.setPosition(100, 100);
+  sf::RectangleShape paddingArea(
+      sf::Vector2f(SF_WIDTH - (SF_PADDING * 2), SF_HEIGHT - (SF_PADDING * 2)));
+  paddingArea.setPosition(SF_PADDING, SF_PADDING);
   paddingArea.setFillColor(sf::Color::Transparent);
   paddingArea.setOutlineColor(sf::Color(35, 36, 48));
   paddingArea.setOutlineThickness(2);
@@ -113,6 +214,9 @@ int main() {
     window.draw(paddingArea);
     for (const auto &draw_point : draw_points_vec) {
       window.draw(draw_point);
+    }
+    if (!vec_hull.empty()) {
+      window.draw(lines);
     }
     window.display();
   }
