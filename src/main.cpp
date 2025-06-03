@@ -7,7 +7,7 @@
 
 #define SF_WIDTH 1900
 #define SF_HEIGHT 1000
-#define SF_PADDING 100
+#define SF_PADDING 300
 #define SF_POINT_RADIUS 6.0
 #define POINTS_NUMBER 50
 #define EPS 1e-6
@@ -161,9 +161,10 @@ std::vector<Point> generate_points(size_t size, double width = SF_WIDTH,
 
 int main() {
   // PointSet pointSet(generate_points(POINTS_NUMBER));
+  // PointSet pointSet(generate_points(4));
   std::random_device rd;
   std::mt19937 gen(rd());
-  std::uniform_int_distribution<int> pt_dist(3, 50);
+  std::uniform_int_distribution<int> pt_dist(3, 30);
   PointSet pointSet(generate_points(pt_dist(gen)));
   ConvexHull hull(pointSet.getSet());
   const auto &vec_hull = hull.getConvexHull();
@@ -211,7 +212,7 @@ int main() {
         window.close();
     }
     window.clear(sf::Color(51, 52, 70));
-    window.draw(paddingArea);
+    // window.draw(paddingArea);
     for (const auto &draw_point : draw_points_vec) {
       window.draw(draw_point);
     }
