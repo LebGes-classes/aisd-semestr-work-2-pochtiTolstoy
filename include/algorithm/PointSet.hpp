@@ -21,14 +21,21 @@ public:
     }
   }
 
-  void display() const {
+  void display_log() const {
     for (const auto &point : set_) {
-      point.display();
+      point.display_log();
       std::cout << std::endl;
     }
   }
 
   const std::vector<Point> &get_set() { return set_; }
+
+  void generate_points() {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> pt_dist(MIN_POINTS, MAX_POINTS);
+    generate_points(pt_dist(gen));
+  }
 
   void generate_points(size_t size, double width = SF_WIDTH,
                        double height = SF_HEIGHT, double padding = SF_PADDING) {
@@ -44,6 +51,7 @@ public:
     if (padding < 0 || padding >= width / 2 || padding >= height / 2) {
       throw std::invalid_argument("Invalid padding value!");
     }
+    set_.clear();
     set_.reserve(size);
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -60,6 +68,8 @@ public:
 
 private:
   std::vector<Point> set_;
+  static constexpr size_t MIN_POINTS = 3;
+  static constexpr size_t MAX_POINTS = 50;
 
   void check_set_size() const {
     if (set_.size() < 3) {

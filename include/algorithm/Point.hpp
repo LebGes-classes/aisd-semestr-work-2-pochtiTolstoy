@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Constants.hpp"
+#include "../Constants.hpp"
 #include <iostream>
 
 struct Point {
@@ -11,7 +11,9 @@ struct Point {
 
   Point(double x, double y) : x_{x}, y_{y} {}
 
-  void display() const { std::cout << "Point : (" << x_ << ", " << y_ << ")"; }
+  void display_log() const {
+    std::cout << "Point : (" << x_ << ", " << y_ << ")";
+  }
 
   bool operator==(const Point &other) const {
     return std::abs(x_ - other.x_) < EPS && std::abs(y_ - other.y_) < EPS;
