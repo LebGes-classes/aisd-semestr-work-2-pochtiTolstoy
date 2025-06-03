@@ -16,45 +16,47 @@ struct Point {
   double x_;
   double y_;
 
+  Point() : x_{0.0}, y_{0.0} {}
   Point(double x, double y) : x_{x}, y_{y} {}
-
   void display() const { std::cout << "Point : (" << x_ << ", " << y_ << ")"; }
-
   bool operator==(const Point &other) const {
     return std::abs(x_ - other.x_) < EPS && std::abs(y_ - other.y_) < EPS;
   }
-
   bool operator!=(const Point &other) const { return !(*this == other); }
+  Point operator+(const Point &other) const noexcept {
+    return Point(x_ + other.x_, y_ + other.y_);
+  }
+  Point operator-(const Point &other) const noexcept {
+    return Point(x_ - other.x_, y_ - other.y_);
+  }
 };
 
 class PointSet {
 public:
   PointSet() = default;
 
-  PointSet(const std::vector<Point> &set) : set_{set} { CheckSetSize(); }
-
-  PointSet(std::vector<Point> &&set) : set_{std::move(set)} { CheckSetSize(); }
-
-  void movePointSet(double x, double y) {
+  PointSet(const std::vector<Point> &set) : set_{set} { check_set_size(); }
+  PointSet(std::vector<Point> &&set) : set_{std::move(set)} {
+    check_set_size();
+  }
+  void move_point_set(double x, double y) {
     for (auto &point : set_) {
       point.x_ += x;
       point.y_ += y;
     }
   }
-
   void display() const {
     for (const auto &point : set_) {
       point.display();
       std::cout << std::endl;
     }
   }
-
-  const std::vector<Point> &getSet() { return set_; }
+  const std::vector<Point> &get_set() { return set_; }
 
 private:
   std::vector<Point> set_;
 
-  void CheckSetSize() const {
+  void check_set_size() const {
     if (set_.size() < 3) {
       throw std::invalid_argument("Point set must contain at least 3 points!");
     }
@@ -64,76 +66,73 @@ private:
 class ConvexHull {
 public:
   ConvexHull(const std::vector<Point> &set) : set_{set} {
-    findJarvisConvexHull();
+    find_jarvis_convex_hull();
   }
-
-  std::vector<Point> getConvexHull() {
-    if (size_ > set_.size()) {
+  std::vector<Point> get_convex_hull() {
+    if (hull_size_ > set_.size()) {
       throw std::out_of_range("Convex hull size out of set range!");
     }
-    std::vector<Point> result(set_.begin(), set_.begin() + size_);
+    std::vector<Point> result(set_.begin(), set_.begin() + hull_size_);
     return result;
   }
 
 private:
   std::vector<Point> set_;
-  size_t size_;
+  size_t hull_size_;
 
-  void findJarvisConvexHull() {
-    const size_t n = set_.size();
-    if (n < 3) {
-      this->size_ = n;
+  void find_jarvis_convex_hull() {
+    const size_t set_size = set_.size();
+    if (set_size < 3) {
+      this->hull_size_ = set_size;
       return;
     }
-
-    size_t entry_idx = getEntryPointIdx();
-    std::swap(set_[0], set_[entry_idx]);
-    Point p0 = set_[0];
-    Point pi = p0;
-    int k = -1;
+    std::swap(set_[0], set_[get_entry_point_idx()]);
+    Point entry_point = set_[0];
+    Point current_point = entry_point;
+    size_t set_cell_to_update = 0;
     do {
-      ++k;
-      for (size_t i = k; i != set_.size(); ++i) {
-        if (JarvisCompare(set_[i], set_[k], pi)) {
-          std::swap(set_[i], set_[k]);
+      for (size_t candidate = set_cell_to_update; candidate != set_size;
+           ++candidate) {
+        if (jarvis_compare(set_[candidate], set_[set_cell_to_update],
+                           current_point)) {
+          std::swap(set_[candidate], set_[set_cell_to_update]);
         }
       }
-      pi = set_[k];
-    } while (pi != p0);
-
-    this->size_ = k + 1;
+      current_point = set_[set_cell_to_update++];
+    } while (current_point != entry_point);
+    this->hull_size_ = set_cell_to_update;
   }
 
-  size_t getEntryPointIdx() {
-    size_t res = 0;
-    for (size_t i = 1; i != set_.size(); ++i) {
-      if (set_[i].y_ < set_[res].y_ ||
-          (std::abs(set_[i].y_ - set_[res].y_) < EPS &&
-           set_[i].x_ < set_[res].x_)) {
-        res = i;
-      }
+  size_t get_entry_point_idx() {
+    size_t entry_point_idx = 0;
+    for (size_t i = entry_point_idx + 1; i != set_.size(); ++i) {
+      bool y_less = (set_[i].y_ < set_[entry_point_idx].y_);
+      bool x_less = (set_[i].x_ < set_[entry_point_idx].x_);
+      bool y_eq = (std::abs(set_[i].y_ - set_[entry_point_idx].y_) < EPS);
+      if (y_less || (y_eq && x_less))
+        entry_point_idx = i;
     }
-    return res;
+    return entry_point_idx;
   }
 
-  bool JarvisCompare(const Point &candidate, const Point &current_candidate,
-                     const Point &current_point) {
-    double cross = crossProduct(current_point, current_candidate, candidate);
+  bool jarvis_compare(const Point &candidate, const Point &current_candidate,
+                      const Point &current_point) {
+    double cross = cross_product(current_point, current_candidate, candidate);
     if (std::abs(cross) < EPS) {
-      return (distanceSquared(current_point, candidate) >
-              distanceSquared(current_point, current_candidate));
+      return (distance_squared(current_point, candidate) >
+              distance_squared(current_point, current_candidate));
     }
     return cross > 0;
   }
 
-  double crossProduct(const Point &a, const Point &b, const Point &c) {
+  double cross_product(const Point &a, const Point &b, const Point &c) {
     return (b.x_ - a.x_) * (c.y_ - a.y_) - (b.y_ - a.y_) * (c.x_ - a.x_);
   }
 
-  double distanceSquared(const Point &a, const Point &b) {
+  double distance_squared(const Point &a, const Point &b) {
     double dx = a.x_ - b.x_;
     double dy = a.y_ - b.y_;
-    return dx * dx + dy * dy; // ?
+    return dx * dx + dy * dy;
   }
 };
 
@@ -178,8 +177,8 @@ int main() {
   std::uniform_int_distribution<int> pt_dist(3, 10);
   PointSet pointSet(generate_points(pt_dist(gen)));
   pointSet.display();
-  ConvexHull hull(pointSet.getSet());
-  const auto &vec_hull = hull.getConvexHull();
+  ConvexHull hull(pointSet.get_set());
+  const auto &vec_hull = hull.get_convex_hull();
   std::cout << "hull size : " << vec_hull.size() << std::endl;
   sf::VertexArray lines(sf::LineStrip, vec_hull.size() + 1); // +1 ???
   if (!vec_hull.empty()) {
@@ -200,7 +199,7 @@ int main() {
 
   std::vector<sf::CircleShape> draw_points_vec;
   constexpr double point_radius = SF_POINT_RADIUS;
-  for (const auto &point : pointSet.getSet()) {
+  for (const auto &point : pointSet.get_set()) {
     sf::CircleShape draw_point(point_radius);
     draw_point.setPointCount(100);
     draw_point.setFillColor(sf::Color(127, 140, 170));
