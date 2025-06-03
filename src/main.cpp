@@ -7,7 +7,7 @@
 
 #define SF_WIDTH 1900
 #define SF_HEIGHT 1000
-#define SF_PADDING 300
+#define SF_PADDING 100
 #define SF_POINT_RADIUS 6.0
 #define POINTS_NUMBER 50
 #define EPS 1e-6
@@ -17,6 +17,8 @@ struct Point {
   double y_;
 
   Point(double x, double y) : x_{x}, y_{y} {}
+
+  void display() const { std::cout << "Point : (" << x_ << ", " << y_ << ")"; }
 
   bool operator==(const Point &other) const {
     return std::abs(x_ - other.x_) < EPS && std::abs(y_ - other.y_) < EPS;
@@ -37,6 +39,13 @@ public:
     for (auto &point : set_) {
       point.x_ += x;
       point.y_ += y;
+    }
+  }
+
+  void display() const {
+    for (const auto &point : set_) {
+      point.display();
+      std::cout << std::endl;
     }
   }
 
@@ -124,7 +133,7 @@ private:
   double distanceSquared(const Point &a, const Point &b) {
     double dx = a.x_ - b.x_;
     double dy = a.y_ - b.y_;
-    return dx * dx - dy * dy;
+    return dx * dx + dy * dy; // ?
   }
 };
 
@@ -160,14 +169,18 @@ std::vector<Point> generate_points(size_t size, double width = SF_WIDTH,
 }
 
 int main() {
+  // PointSet pointSet({{1316.96, 827.68}, {1257.43, 302.405}, {1438.57,
+  // 439.66}});
   // PointSet pointSet(generate_points(POINTS_NUMBER));
   // PointSet pointSet(generate_points(4));
   std::random_device rd;
   std::mt19937 gen(rd());
-  std::uniform_int_distribution<int> pt_dist(3, 30);
+  std::uniform_int_distribution<int> pt_dist(3, 10);
   PointSet pointSet(generate_points(pt_dist(gen)));
+  pointSet.display();
   ConvexHull hull(pointSet.getSet());
   const auto &vec_hull = hull.getConvexHull();
+  std::cout << "hull size : " << vec_hull.size() << std::endl;
   sf::VertexArray lines(sf::LineStrip, vec_hull.size() + 1); // +1 ???
   if (!vec_hull.empty()) {
     for (size_t i = 0; i < vec_hull.size(); ++i) {
@@ -212,7 +225,7 @@ int main() {
         window.close();
     }
     window.clear(sf::Color(51, 52, 70));
-    // window.draw(paddingArea);
+    window.draw(paddingArea);
     for (const auto &draw_point : draw_points_vec) {
       window.draw(draw_point);
     }
