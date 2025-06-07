@@ -17,6 +17,7 @@ int main() {
   }
 
   Button nextButton("Next generation", font, {20, SF_HEIGHT - 70}, {250, 50});
+  Button showMeshButton("Show mesh", font, {280, SF_HEIGHT - 70}, {250, 50});
 
   PointSet pointSet;
   pointSet.generate_points(POINTS_NUMBER);
@@ -27,6 +28,7 @@ int main() {
   std::vector<sf::CircleShape> draw_points_vec;
   std::vector<sf::VertexArray> polygons;
 
+  sf::VertexArray hull_lines;
   auto regenerate_set = [&]() {
     pointSet.generate_points(POINTS_NUMBER);
     hull = ChanConvexHull(pointSet.get_set());
@@ -68,15 +70,16 @@ int main() {
             sf::Vector2f(polygon_mesh[0].x_, polygon_mesh[0].y_);
       }
     }
-    // const auto &vec_hull = hull.getConvexHull();
-    // lines = sf::VertexArray(sf::LineStrip, vec_hull.size() + 1);
-    // if (!vec_hull.empty()) {
-    //   for (size_t i = 0; i < vec_hull.size(); ++i) {
-    //     lines[i] = sf::Vertex(sf::Vector2f(vec_hull[i].x_, vec_hull[i].y_),
-    //                           sf::Color(234, 239, 239));
-    //   }
-    //   lines[vec_hull.size()] = sf::Vector2f(vec_hull[0].x_, vec_hull[0].y_);
-    // }
+    const auto &vec_hull = hull.getChanHull();
+    hull_lines = sf::VertexArray(sf::LineStrip, vec_hull.size() + 1);
+    if (!vec_hull.empty()) {
+      for (size_t i = 0; i < vec_hull.size(); ++i) {
+        hull_lines[i] = sf::Vertex(sf::Vector2f(vec_hull[i].x_, vec_hull[i].y_),
+                                   sf::Color(0, 255, 0));
+      }
+      hull_lines[vec_hull.size()] =
+          sf::Vector2f(vec_hull[0].x_, vec_hull[0].y_);
+    }
   };
 
   regenerate_set();
@@ -94,6 +97,8 @@ int main() {
   paddingArea.setOutlineColor(sf::Color(35, 36, 48));
   paddingArea.setOutlineThickness(2);
 
+  bool show_mesh = false;
+  bool show_hull = true;
   while (window.isOpen()) {
     sf::Event event;
     while (window.pollEvent(event)) {
@@ -114,6 +119,9 @@ int main() {
             // std::cout << "points number : " << points_number << std::endl;
             // std::cout << "hull size     : " << hull_size << std::endl;
             // std::cout << "percentage    : " << percentage << std::endl;
+          } else if (showMeshButton.contains(mousePos)) {
+            show_mesh = !show_mesh;
+            show_hull = !show_hull;
           }
         }
       }
@@ -121,14 +129,22 @@ int main() {
     window.clear(sf::Color(51, 52, 70));
     window.draw(paddingArea);
     nextButton.draw(window);
+    showMeshButton.draw(window);
     for (const auto &draw_point : draw_points_vec) {
       window.draw(draw_point);
     }
 
-    size_t partitions_number = hull.getPartitionsNumber();
-    for (size_t polygon_idx = 0; polygon_idx < partitions_number;
-         ++polygon_idx) {
-      window.draw(polygons[polygon_idx]);
+    if (show_mesh) {
+      size_t partitions_number = hull.getPartitionsNumber();
+      for (size_t polygon_idx = 0; polygon_idx < partitions_number;
+           ++polygon_idx) {
+        window.draw(polygons[polygon_idx]);
+      }
+    }
+    if (show_hull) {
+      if (hull.size() != 0) {
+        window.draw(hull_lines);
+      }
     }
     window.display();
   }

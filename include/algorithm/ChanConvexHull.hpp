@@ -14,6 +14,8 @@ public:
     findConvexHull();
   }
 
+  std::vector<Point> getChanHull() const { return final_hull_; }
+
   std::vector<GrahamConvexHull> getGrahamPartitions() const {
     return graham_partitions_;
   }
@@ -27,24 +29,52 @@ public:
     return graham_partitions_[idx].getConvexHull();
   }
 
+  size_t size() const { return final_hull_.size(); }
+
 private:
   size_t partition_size_;
   std::vector<Point> set_;
   std::vector<std::vector<Point>> partitions_;
   std::vector<GrahamConvexHull> graham_partitions_;
+  std::vector<Point> final_hull_;
 
   void findConvexHull() {
+    // TODO : BINARY SEARCH INSIDE BUCKET INSTEAD OF LINEAR TIME
     generatePartition();
     for (size_t bucket_idx = 0; bucket_idx < partitions_.size(); ++bucket_idx) {
       graham_partitions_.push_back({partitions_[bucket_idx]});
+      // TODO : BIN SEARCH
+      const std::vector<Point> &graham_hull =
+          graham_partitions_[bucket_idx].getConvexHull();
+      for (const auto &point : graham_hull) {
+        final_hull_.push_back(point);
+      }
     }
-    // 1. Найти Entry point по бакетам
-    // 2. взять бакет, найти лучшего канидата в нем бин поиском
-    // 3. найти лучших кандидатов по бакетам выбрать лучшего из них
-    // 4. это и есть след точка в hull
-    const Point &entryPoint = findEntryPoint();
-    std::cout << "ENTRY POINT : " << entryPoint.x_ << ", " << entryPoint.y_
-              << std::endl;
+    JarvisConvexHull jarvisHull(final_hull_);
+    final_hull_ = jarvisHull.getConvexHull();
+
+    // std::vector<Point> hull;
+    // const Point &entryPoint = findEntryPoint();
+    // std::cout << "ENTRY POINT : " << entryPoint.x_ << ", " << entryPoint.y_
+    //           << std::endl;
+    // hull.push_back(entryPoint);
+
+    // TODO : BIN SEARCH
+    // const Point& nextHullPoint = findNextHullPoint();
+    // while (entryPoint != nextHullPoint) {
+    //   hull.push_back(nextHullPoint);
+    //   nextHullPoint = findNextHullPoint();
+    // }
+
+    // 1. Есть entry point, теперь нужно взять какой-то бакет
+    // 2. Найти бин поиском лучшего кандидата, относительно угла
+    // 3. Сделать то же самое с остальными бакетами
+    // 4. из них выбрать лучшего кандидата
+    // 5. добавить его в вектор результат
+
+    // LINEAR TIME TO FIND NEXT CANDIDATE IN BUCKET, REWRITE TO BIN SEARCH
+    // 1. Слить все в один вектор
+    // 2. по этому вектору запустить Jarvis
   }
 
   Point findEntryPoint() {
