@@ -41,17 +41,48 @@ private:
   void findConvexHull() {
     // TODO : BINARY SEARCH INSIDE BUCKET INSTEAD OF LINEAR TIME
     generatePartition();
+    // TODO : delete debug vector
+    std::vector<Point> pure_graham_hull;
     for (size_t bucket_idx = 0; bucket_idx < partitions_.size(); ++bucket_idx) {
       graham_partitions_.push_back({partitions_[bucket_idx]});
       // TODO : BIN SEARCH
       const std::vector<Point> &graham_hull =
           graham_partitions_[bucket_idx].getConvexHull();
       for (const auto &point : graham_hull) {
-        final_hull_.push_back(point);
+        pure_graham_hull.push_back(point);
       }
     }
-    JarvisConvexHull jarvisHull(final_hull_);
-    final_hull_ = jarvisHull.getConvexHull();
+
+    // TODO : delete debug pure_jarvis_hull vector
+    GrahamConvexHull grahamHull(pure_graham_hull);
+    pure_graham_hull = grahamHull.getConvexHull();
+
+    Point entryPoint = findEntryPoint();
+    std::vector<Point> &current_bucket = partitions_[0];
+
+    std::cout << "Points on hull : " << std::endl;
+    for (const auto &elem : pure_graham_hull) {
+      elem.display_log();
+      std::cout << std::endl;
+    }
+    std::cout << std::endl;
+
+    std::cout << "First point on hull" << std::endl;
+    entryPoint.display_log();
+    std::cout << std::endl;
+    pure_graham_hull[0].display_log();
+    std::cout << std::endl;
+    assert(entryPoint == pure_graham_hull[0]);
+
+    Point best_bucket_point =
+        findNextPointInPartition(current_bucket, entryPoint);
+
+    std::cout << "Second point on hull : " << std::endl;
+    best_bucket_point.display_log();
+    std::cout << std::endl;
+    pure_graham_hull[1].display_log();
+    std::cout << std::endl;
+    assert(best_bucket_point == pure_graham_hull[1]);
 
     // std::vector<Point> hull;
     // const Point &entryPoint = findEntryPoint();
@@ -75,6 +106,47 @@ private:
     // LINEAR TIME TO FIND NEXT CANDIDATE IN BUCKET, REWRITE TO BIN SEARCH
     // 1. Слить все в один вектор
     // 2. по этому вектору запустить Jarvis
+
+    // TODO : если в [0] каждого бакета лежит entry point этого бакета, то entry
+    // по всему множеству можно перебирая [0] бакетов
+  }
+
+  Point findNextPointInPartition(const std::vector<Point> &partition,
+                                 const Point &current_point) {
+    size_t l = 1;
+    size_t r = partition.size() - 1;
+    Point current_candidate = partition[0];
+    Point best_candidate = current_point;
+    while (l < r) {
+      size_t m = l + (r - l) / 2;
+      if (jarvis_compare(current_candidate, best_candidate, current_point)) {
+        best_candidate = current_candidate;
+        l = m + 1;
+      } else {
+        r = m;
+      }
+    }
+    return best_candidate;
+  }
+
+  bool jarvis_compare(const Point &candidate, const Point &current_candidate,
+                      const Point &current_point) {
+    double cross = cross_product(current_point, current_candidate, candidate);
+    if (std::abs(cross) < EPS) {
+      return (distance_squared(current_point, candidate) >
+              distance_squared(current_point, current_candidate));
+    }
+    return cross > 0;
+  }
+
+  double cross_product(const Point &a, const Point &b, const Point &c) {
+    return (b.x_ - a.x_) * (c.y_ - a.y_) - (b.y_ - a.y_) * (c.x_ - a.x_);
+  }
+
+  double distance_squared(const Point &a, const Point &b) {
+    double dx = a.x_ - b.x_;
+    double dy = a.y_ - b.y_;
+    return dx * dx + dy * dy;
   }
 
   Point findEntryPoint() {

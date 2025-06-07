@@ -29,6 +29,7 @@ private:
       this->hull_size_ = set_size;
       return;
     }
+    // TODO : jarvis swap entry point, should be at [0] index
     std::swap(set_[0], set_[get_entry_point_idx()]);
     Point entry_point = set_[0];
     Point current_point = entry_point;
@@ -36,6 +37,8 @@ private:
     do {
       for (size_t candidate = set_cell_to_update; candidate != set_size;
            ++candidate) {
+        // set_[set_cell_to_update] - best candidate
+        // set_[cnadidate] - current candidate
         if (jarvis_compare(set_[candidate], set_[set_cell_to_update],
                            current_point)) {
           std::swap(set_[candidate], set_[set_cell_to_update]);
