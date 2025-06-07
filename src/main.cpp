@@ -20,13 +20,15 @@ int main() {
   PointSet pointSet;
   pointSet.generate_points(3);
 
-  GrahamConvexHull hull(pointSet.get_set());
+  JarvisConvexHull hull(pointSet.get_set());
+  // GrahamConvexHull hull(pointSet.get_set());
   std::vector<sf::CircleShape> draw_points_vec;
   sf::VertexArray lines;
 
   auto regenerate_set = [&]() {
     pointSet.generate_points();
-    hull = GrahamConvexHull(pointSet.get_set());
+    // hull = GrahamConvexHull(pointSet.get_set());
+    hull = JarvisConvexHull(pointSet.get_set());
 
     draw_points_vec.clear();
     for (const auto &point : pointSet.get_set()) {
@@ -79,6 +81,13 @@ int main() {
               {event.mouseButton.x, event.mouseButton.y});
           if (nextButton.contains(mousePos)) {
             regenerate_set();
+            size_t points_number = pointSet.size();
+            size_t hull_size = hull.size();
+            double percentage =
+                (static_cast<double>(hull_size) * 100.0) / points_number;
+            std::cout << "points number : " << points_number << std::endl;
+            std::cout << "hull size     : " << hull_size << std::endl;
+            std::cout << "percentage    : " << percentage << std::endl;
           }
         }
       }

@@ -30,6 +30,8 @@ public:
 
   const std::vector<Point> &get_set() { return set_; }
 
+  size_t size() const { return set_.size(); }
+
   void generate_points() {
     std::random_device rd;
     std::mt19937 gen(rd());

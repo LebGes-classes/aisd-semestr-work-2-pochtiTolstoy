@@ -25,9 +25,10 @@ public:
 
   std::vector<Point> getConvexHull() const { return hull_; }
 
+  size_t size() const { return hull_.size(); }
+
 private:
   std::vector<Point> set_;
-  size_t hull_size_;
   std::vector<Point> hull_;
 
   void sortPoints(std::vector<Point> &vect, Point centralP) {
@@ -126,7 +127,6 @@ private:
     }
 
     this->hull_ = result;
-    this->hull_size_ = result.size();
   }
 };
 

@@ -9,13 +9,15 @@ public:
     find_jarvis_convex_hull();
   }
 
-  std::vector<Point> get_convex_hull() {
+  std::vector<Point> getConvexHull() {
     if (hull_size_ > set_.size()) {
       throw std::out_of_range("Convex hull size out of set range!");
     }
     std::vector<Point> result(set_.begin(), set_.begin() + hull_size_);
     return result;
   }
+
+  size_t size() const { return hull_size_; }
 
 private:
   std::vector<Point> set_;
