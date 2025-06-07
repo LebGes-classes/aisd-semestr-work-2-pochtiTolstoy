@@ -38,6 +38,41 @@ private:
     for (size_t bucket_idx = 0; bucket_idx < partitions_.size(); ++bucket_idx) {
       graham_partitions_.push_back({partitions_[bucket_idx]});
     }
+    // 1. Найти Entry point по бакетам
+    // 2. взять бакет, найти лучшего канидата в нем бин поиском
+    // 3. найти лучших кандидатов по бакетам выбрать лучшего из них
+    // 4. это и есть след точка в hull
+    const Point &entryPoint = findEntryPoint();
+    std::cout << "ENTRY POINT : " << entryPoint.x_ << ", " << entryPoint.y_
+              << std::endl;
+  }
+
+  Point findEntryPoint() {
+    Point entryPoint = partitions_[0][0];
+    for (size_t row = 0; row < partitions_.size(); ++row) {
+      Point candidate = findEntryPointInPartition(partitions_[row]);
+      if (y_less_compare(candidate, entryPoint)) {
+        entryPoint = candidate;
+      }
+    }
+    return entryPoint;
+  }
+
+  Point findEntryPointInPartition(const std::vector<Point> &partition) {
+    size_t entry_point_idx = 0;
+    for (size_t i = 1; i < partition.size(); ++i) {
+      if (y_less_compare(partition[i], partition[entry_point_idx])) {
+        entry_point_idx = i;
+      }
+    }
+    return partition[entry_point_idx];
+  }
+
+  bool y_less_compare(const Point &p1, const Point &p2) {
+    bool y_less = (p1.y_ < p2.y_);
+    bool x_less = (p1.x_ < p2.x_);
+    bool y_eq = (std::abs(p1.y_ - p2.y_) < EPS);
+    return (y_less || (y_eq && x_less));
   }
 
   void findPartitionSize(size_t &partition_size, size_t &rem) {
