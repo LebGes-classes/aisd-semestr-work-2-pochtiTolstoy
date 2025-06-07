@@ -1,4 +1,5 @@
-#include "../include/algorithm/ConvexHull.hpp"
+#include "../include/algorithm/GrahamConvexHull.hpp"
+#include "../include/algorithm/JarvisConvexHull.hpp"
 #include "../include/algorithm/PointSet.hpp"
 #include "../include/graphics/Button.hpp"
 #include <SFML/Graphics.hpp>
@@ -19,13 +20,13 @@ int main() {
   PointSet pointSet;
   pointSet.generate_points(3);
 
-  ConvexHull hull(pointSet.get_set());
+  GrahamConvexHull hull(pointSet.get_set());
   std::vector<sf::CircleShape> draw_points_vec;
   sf::VertexArray lines;
 
   auto regenerate_set = [&]() {
     pointSet.generate_points();
-    hull = ConvexHull(pointSet.get_set());
+    hull = GrahamConvexHull(pointSet.get_set());
 
     draw_points_vec.clear();
     for (const auto &point : pointSet.get_set()) {
@@ -39,7 +40,7 @@ int main() {
       draw_points_vec.push_back(draw_point);
     }
 
-    const auto &vec_hull = hull.get_convex_hull();
+    const auto &vec_hull = hull.getConvexHull();
     lines = sf::VertexArray(sf::LineStrip, vec_hull.size() + 1);
     if (!vec_hull.empty()) {
       for (size_t i = 0; i < vec_hull.size(); ++i) {
@@ -89,7 +90,7 @@ int main() {
       window.draw(draw_point);
     }
 
-    if (!hull.get_convex_hull().empty()) {
+    if (!hull.getConvexHull().empty()) {
       window.draw(lines);
     }
     window.display();

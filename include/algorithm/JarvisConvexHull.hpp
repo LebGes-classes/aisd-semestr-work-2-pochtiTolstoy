@@ -3,9 +3,9 @@
 #include "Point.hpp"
 #include <vector>
 
-class ConvexHull {
+class JarvisConvexHull {
 public:
-  ConvexHull(const std::vector<Point> &set) : set_{set} {
+  JarvisConvexHull(const std::vector<Point> &set) : set_{set} {
     find_jarvis_convex_hull();
   }
 
