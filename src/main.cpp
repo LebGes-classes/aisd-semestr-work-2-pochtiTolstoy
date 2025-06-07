@@ -1,3 +1,4 @@
+#include "../include/algorithm/ChanConvexHull.hpp"
 #include "../include/algorithm/GrahamConvexHull.hpp"
 #include "../include/algorithm/JarvisConvexHull.hpp"
 #include "../include/algorithm/PointSet.hpp"
@@ -19,16 +20,18 @@ int main() {
 
   PointSet pointSet;
   pointSet.generate_points(POINTS_NUMBER);
+  ChanConvexHull hull(pointSet.get_set());
 
-  JarvisConvexHull hull(pointSet.get_set());
+  // JarvisConvexHull hull(pointSet.get_set());
   // GrahamConvexHull hull(pointSet.get_set());
   std::vector<sf::CircleShape> draw_points_vec;
-  sf::VertexArray lines;
+  std::vector<sf::VertexArray> polygons;
 
   auto regenerate_set = [&]() {
     pointSet.generate_points(POINTS_NUMBER);
+    hull = ChanConvexHull(pointSet.get_set());
     // hull = GrahamConvexHull(pointSet.get_set());
-    hull = JarvisConvexHull(pointSet.get_set());
+    // hull = JarvisConvexHull(pointSet.get_set());
 
     draw_points_vec.clear();
     for (const auto &point : pointSet.get_set()) {
@@ -42,15 +45,38 @@ int main() {
       draw_points_vec.push_back(draw_point);
     }
 
-    const auto &vec_hull = hull.getConvexHull();
-    lines = sf::VertexArray(sf::LineStrip, vec_hull.size() + 1);
-    if (!vec_hull.empty()) {
-      for (size_t i = 0; i < vec_hull.size(); ++i) {
-        lines[i] = sf::Vertex(sf::Vector2f(vec_hull[i].x_, vec_hull[i].y_),
-                              sf::Color(234, 239, 239));
+    size_t partitions_number = hull.getPartitionsNumber();
+    polygons.clear();
+    polygons.resize(partitions_number);
+    for (size_t polygon_idx = 0; polygon_idx < partitions_number;
+         ++polygon_idx) {
+      const auto &polygon_mesh = hull.getGrahamPartition(polygon_idx);
+      polygons[polygon_idx] =
+          sf::VertexArray(sf::LineStrip, polygon_mesh.size() + 1);
+      if (!polygon_mesh.empty()) {
+        for (size_t vertex_idx = 0; vertex_idx < polygon_mesh.size();
+             ++vertex_idx) {
+          polygons[polygon_idx][vertex_idx] =
+              sf::Vertex(sf::Vector2f(polygon_mesh[vertex_idx].x_,
+                                      polygon_mesh[vertex_idx].y_),
+                         sf::Color(234, 239, 239));
+          // TODO :
+          std::cout << polygon_mesh[vertex_idx].x_ << ", "
+                    << polygon_mesh[vertex_idx].y_ << std::endl;
+        }
+        polygons[polygon_idx][polygon_mesh.size()] =
+            sf::Vector2f(polygon_mesh[0].x_, polygon_mesh[0].y_);
       }
-      lines[vec_hull.size()] = sf::Vector2f(vec_hull[0].x_, vec_hull[0].y_);
     }
+    // const auto &vec_hull = hull.getConvexHull();
+    // lines = sf::VertexArray(sf::LineStrip, vec_hull.size() + 1);
+    // if (!vec_hull.empty()) {
+    //   for (size_t i = 0; i < vec_hull.size(); ++i) {
+    //     lines[i] = sf::Vertex(sf::Vector2f(vec_hull[i].x_, vec_hull[i].y_),
+    //                           sf::Color(234, 239, 239));
+    //   }
+    //   lines[vec_hull.size()] = sf::Vector2f(vec_hull[0].x_, vec_hull[0].y_);
+    // }
   };
 
   regenerate_set();
@@ -81,13 +107,13 @@ int main() {
               {event.mouseButton.x, event.mouseButton.y});
           if (nextButton.contains(mousePos)) {
             regenerate_set();
-            size_t points_number = pointSet.size();
-            size_t hull_size = hull.size();
-            double percentage =
-                (static_cast<double>(hull_size) * 100.0) / points_number;
-            std::cout << "points number : " << points_number << std::endl;
-            std::cout << "hull size     : " << hull_size << std::endl;
-            std::cout << "percentage    : " << percentage << std::endl;
+            // size_t points_number = pointSet.size();
+            // size_t hull_size = hull.size();
+            // double percentage =
+            //     (static_cast<double>(hull_size) * 100.0) / points_number;
+            // std::cout << "points number : " << points_number << std::endl;
+            // std::cout << "hull size     : " << hull_size << std::endl;
+            // std::cout << "percentage    : " << percentage << std::endl;
           }
         }
       }
@@ -99,8 +125,10 @@ int main() {
       window.draw(draw_point);
     }
 
-    if (!hull.getConvexHull().empty()) {
-      window.draw(lines);
+    size_t partitions_number = hull.getPartitionsNumber();
+    for (size_t polygon_idx = 0; polygon_idx < partitions_number;
+         ++polygon_idx) {
+      window.draw(polygons[polygon_idx]);
     }
     window.display();
   }
