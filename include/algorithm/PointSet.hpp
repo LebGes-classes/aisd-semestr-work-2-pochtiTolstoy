@@ -8,10 +8,11 @@ class PointSet {
 public:
   PointSet() = default;
 
-  PointSet(const std::vector<Point> &set) : set_{set} { check_set_size(); }
+  PointSet(const std::vector<Point> &set)
+      : set_{set} { /* check_set_size(); */ }
 
   PointSet(std::vector<Point> &&set) : set_{std::move(set)} {
-    check_set_size();
+    /* check_set_size(); */
   }
 
   void move_point_set(double x, double y) {

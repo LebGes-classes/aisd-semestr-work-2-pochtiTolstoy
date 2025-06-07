@@ -18,7 +18,7 @@ int main() {
   Button nextButton("Next generation", font, {20, SF_HEIGHT - 70}, {250, 50});
 
   PointSet pointSet;
-  pointSet.generate_points(3);
+  pointSet.generate_points(POINTS_NUMBER);
 
   JarvisConvexHull hull(pointSet.get_set());
   // GrahamConvexHull hull(pointSet.get_set());
@@ -26,7 +26,7 @@ int main() {
   sf::VertexArray lines;
 
   auto regenerate_set = [&]() {
-    pointSet.generate_points();
+    pointSet.generate_points(POINTS_NUMBER);
     // hull = GrahamConvexHull(pointSet.get_set());
     hull = JarvisConvexHull(pointSet.get_set());
 
