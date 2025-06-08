@@ -6,6 +6,15 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 
+const sf::Color BACKGROUND_COLOR(51, 52, 70);
+const sf::Color BORDER_COLOR(40, 42, 54);
+const sf::Color REGULAR_POINT_COLOR(173, 216, 230);
+const sf::Color HULL_POINT_COLOR(255, 184, 77);
+const sf::Color START_POINT_COLOR(50, 205, 50);
+const sf::Color HULL_LINE_COLOR(140, 205, 235);
+const sf::Color MESH_COLOR(100, 149, 237);
+const sf::Color TEXT_COLOR(248, 248, 242);
+
 class ConvexHullVisualizer {
 public:
   ConvexHullVisualizer()
@@ -21,7 +30,7 @@ public:
         {SF_WIDTH - 2 * SF_PADDING, SF_HEIGHT - 2 * SF_PADDING});
     paddingArea.setPosition(SF_PADDING, SF_PADDING);
     paddingArea.setFillColor(sf::Color::Transparent);
-    paddingArea.setOutlineColor(sf::Color(35, 36, 48));
+    paddingArea.setOutlineColor(BORDER_COLOR);
     paddingArea.setOutlineThickness(2);
     if (!font.loadFromFile("../res/AgaveNerdFontMono-Bold.ttf")) {
       throw std::runtime_error("Failed to load font!");
@@ -74,7 +83,7 @@ private:
         {SF_WIDTH - 2 * SF_PADDING, SF_HEIGHT - 2 * SF_PADDING});
     paddingArea.setPosition(SF_PADDING, SF_PADDING);
     paddingArea.setFillColor(sf::Color::Transparent);
-    paddingArea.setOutlineColor(sf::Color(35, 36, 48));
+    paddingArea.setOutlineColor(BORDER_COLOR);
     paddingArea.setOutlineThickness(2);
   }
 
@@ -111,9 +120,9 @@ private:
       sf::CircleShape circle(SF_POINT_RADIUS);
       circle.setPointCount(32);
       if (point == hullAlgorithm->getHull()[0]) {
-        circle.setFillColor(sf::Color(0, 255, 0));
+        circle.setFillColor(START_POINT_COLOR);
       } else {
-        circle.setFillColor(sf::Color(127, 140, 170));
+        circle.setFillColor(REGULAR_POINT_COLOR);
       }
       circle.setOutlineColor(sf::Color::Black);
       circle.setOutlineThickness(2);
@@ -129,13 +138,25 @@ private:
       size_t partitions = chanHull->getPartitionsNumber();
       partitionMeshes.resize(partitions);
 
+      const sf::Color startColor(100, 230, 255);
+      const sf::Color endColor(180, 120, 255);
+
       for (size_t i = 0; i < partitions; ++i) {
         const auto &polygon = chanHull->getGrahamPartition(i);
         partitionMeshes[i] = sf::VertexArray(sf::LineStrip, polygon.size() + 1);
+        float ratio =
+            partitions > 1 ? static_cast<float>(i) / (partitions - 1) : 0.5f;
+        sf::Color meshColor(
+            static_cast<sf::Uint8>(startColor.r +
+                                   ratio * (endColor.r - startColor.r)),
+            static_cast<sf::Uint8>(startColor.g +
+                                   ratio * (endColor.g - startColor.g)),
+            static_cast<sf::Uint8>(startColor.b +
+                                   ratio * (endColor.b - startColor.b)));
 
         for (size_t j = 0; j < polygon.size(); ++j) {
           partitionMeshes[i][j] = {sf::Vector2f(polygon[j].x_, polygon[j].y_),
-                                   sf::Color(234, 239, 239)};
+                                   meshColor};
         }
         if (!polygon.empty()) {
           partitionMeshes[i][polygon.size()] = partitionMeshes[i][0];
@@ -151,7 +172,7 @@ private:
 
     for (size_t i = 0; i < hullPoints.size(); ++i) {
       hullLines[i] = {sf::Vector2f(hullPoints[i].x_, hullPoints[i].y_),
-                      sf::Color::Green};
+                      HULL_LINE_COLOR};
     }
     if (!hullPoints.empty()) {
       hullLines[hullPoints.size()] = hullLines[0];
@@ -162,7 +183,7 @@ private:
       label.setFont(font);
       label.setCharacterSize(16);
       label.setString(std::to_string(i));
-      label.setFillColor(sf::Color::White);
+      label.setFillColor(TEXT_COLOR);
 
       // Position the label near the point
       label.setPosition(hullPoints[i].x_ + SF_POINT_RADIUS + 2,
@@ -194,12 +215,13 @@ private:
       generateNewSet();
     } else if (toggleMeshButton.contains(mousePos)) {
       showMesh = !showMesh;
+      showHull = !showHull;
     }
   }
 
   void render() {
-    window.clear(sf::Color(51, 52, 70));
-    window.draw(paddingArea);
+    window.clear(BACKGROUND_COLOR);
+    // window.draw(paddingArea);
 
     for (const auto &point : points) {
       window.draw(point);

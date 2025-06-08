@@ -24,7 +24,7 @@ public:
 
   void display_log() const {
     for (const auto &point : set_) {
-      point.display_log();
+      // point.display_log();
       std::cout << std::endl;
     }
   }

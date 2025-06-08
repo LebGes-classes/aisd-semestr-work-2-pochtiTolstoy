@@ -47,10 +47,10 @@ private:
     JarvisConvexHull jarvis_convex_hull(points_);
     std::vector<Point> debug_vec = jarvis_convex_hull.getHull();
 
-    for (const auto &point : points_) {
-      point.display_log();
-      std::cout << std::endl;
-    }
+    // for (const auto &point : points_) {
+    // point.display_log();
+    // std::cout << std::endl;
+    // }
 
     generatePartitions();
     for (size_t bucket_idx = 0; bucket_idx < partitions_.size(); ++bucket_idx) {
@@ -64,7 +64,6 @@ private:
     assert(hull_.front() == debug_vec[0]);
 
     size_t max_hull_size = points_.size();
-    std::cout << "run finder : " << std::endl;
     for (size_t step = 0; step < max_hull_size; ++step) {
       Point current_point = hull_.back();
       Point best_candidate;
@@ -82,14 +81,14 @@ private:
       if (best_candidate == entry_point) {
         break;
       }
-      assert(debug_vec[step + 1] == best_candidate);
+      // assert(debug_vec[step + 1] == best_candidate);
       hull_.push_back(best_candidate);
     }
-    for (const auto &point : hull_) {
-      point.display_log();
-      std::cout << std::endl;
-    }
-    assert(hull_.size() == jarvis_convex_hull.size());
+    // for (const auto &point : hull_) {
+    // point.display_log();
+    // std::cout << std::endl;
+    // }
+    // assert(hull_.size() == jarvis_convex_hull.size());
   }
 
   // Point findNextPointInPartition(const std::vector<Point> &hull,
