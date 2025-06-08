@@ -37,90 +37,64 @@ private:
   std::vector<GrahamConvexHull> graham_partitions_;
 
   void computeHull() override {
-    // TODO : BINARY SEARCH INSIDE BUCKET INSTEAD OF LINEAR TIME
     generatePartitions();
     for (size_t bucket_idx = 0; bucket_idx < partitions_.size(); ++bucket_idx) {
       graham_partitions_.push_back({partitions_[bucket_idx]});
-      // TODO : BIN SEARCH
-      // const std::vector<Point> &graham_hull =
-      //     graham_partitions_[bucket_idx].getConvexHull();
-      // BUG : DOUBLE POINTS IN GRAHAM
-      // for (const auto &point : graham_hull) {
-      //   pure_graham_hull.push_back(point);
     }
-    std::cout << "Points on hull : " << std::endl;
-    for (const auto &elem : points_) {
-      elem.display_log();
-      std::cout << std::endl;
+    JarvisConvexHull jarvis_convex_hull(points_);
+    std::vector<Point> debug_vec = jarvis_convex_hull.getHull();
+    Point entry_point = findEntryPoint();
+    hull_.push_back(entry_point);
+    assert(hull_.front() == debug_vec[0]);
+
+    std::vector<Point> next_points;
+    for (const auto &partition : graham_partitions_) {
+      Point candidate =
+          findNextPointInPartition(partition.getHull(), entry_point);
+      next_points.push_back(candidate);
     }
-    std::cout << std::endl;
 
-    Point entryPoint = findEntryPoint();
-    std::vector<Point> &current_bucket = partitions_[0];
+    Point best_candidate = next_points[0];
+    for (size_t i = 1; i < next_points.size(); ++i) {
+      if (jarvis_compare(next_points[i], best_candidate, entry_point)) {
+        best_candidate = next_points[i];
+      }
+    }
 
-    std::cout << "First point on hull" << std::endl;
-    entryPoint.display_log();
-    std::cout << std::endl;
-    // pure_graham_hull[0].display_log();
-    std::cout << std::endl;
-    // assert(entryPoint == pure_graham_hull[0]);
-
-    Point best_bucket_point =
-        findNextPointInPartition(current_bucket, entryPoint);
-
-    std::cout << "Second point on hull : " << std::endl;
-    best_bucket_point.display_log();
-    std::cout << std::endl;
-    // pure_graham_hull[1].display_log();
-    std::cout << std::endl;
-    assert(0);
-    // assert(best_bucket_point == pure_graham_hull[1]);
-
-    // std::vector<Point> hull;
-    // const Point &entryPoint = findEntryPoint();
-    // std::cout << "ENTRY POINT : " << entryPoint.x_ << ", " << entryPoint.y_
-    //           << std::endl;
-    // hull.push_back(entryPoint);
-
-    // TODO : BIN SEARCH
-    // const Point& nextHullPoint = findNextHullPoint();
-    // while (entryPoint != nextHullPoint) {
-    //   hull.push_back(nextHullPoint);
-    //   nextHullPoint = findNextHullPoint();
-    // }
-
-    // 1. Есть entry point, теперь нужно взять какой-то бакет
-    // 2. Найти бин поиском лучшего кандидата, относительно угла
-    // 3. Сделать то же самое с остальными бакетами
-    // 4. из них выбрать лучшего кандидата
-    // 5. добавить его в вектор результат
-
-    // LINEAR TIME TO FIND NEXT CANDIDATE IN BUCKET, REWRITE TO BIN SEARCH
-    // 1. Слить все в один вектор
-    // 2. по этому вектору запустить Jarvis
-
-    // TODO : если в [0] каждого бакета лежит entry point этого бакета, то entry
-    // по всему множеству можно перебирая [0] бакетов
+    assert(best_candidate == debug_vec[1]);
   }
 
   Point findNextPointInPartition(const std::vector<Point> &partition,
                                  const Point &current_point) {
-    size_t l = 1;
-    size_t r = partition.size() - 1;
-    Point current_candidate = partition[0];
-    Point best_candidate = current_point;
-    while (l < r) {
-      size_t m = l + (r - l) / 2;
-      if (jarvis_compare(current_candidate, best_candidate, current_point)) {
-        best_candidate = current_candidate;
-        l = m + 1;
-      } else {
+    size_t size = partition.size();
+    if (size == 1)
+      return partition[0];
+    if (size == 2) {
+      return jarvis_compare(partition[1], partition[0], current_point)
+                 ? partition[1]
+                 : partition[0];
+    }
+
+    auto get = [&](size_t idx) { return partition[idx % size]; };
+
+    size_t l = 0, r = size;
+    while (r - l > 1) {
+      size_t m = (l + r) / 2;
+      Point mid = get(m);
+      Point mid_next = get(m + 1);
+
+      double orient = cross_product(current_point, mid, mid_next);
+      if (orient < 0) {
         r = m;
+      } else {
+        l = m;
       }
     }
-    return best_candidate;
-  }
 
+    Point p1 = get(l);
+    Point p2 = get(r % size);
+    return cross_product(current_point, p1, p2) > 0 ? p2 : p1;
+  }
   bool jarvis_compare(const Point &candidate, const Point &current_candidate,
                       const Point &current_point) {
     double cross = cross_product(current_point, current_candidate, candidate);
@@ -174,10 +148,8 @@ private:
     if (set_size < 6) {
       partition_size = set_size;
       rem = 0;
-
       assert(partition_size == set_size);
       assert(rem == 0);
-
       partitions_.push_back(points_);
       return;
     }
@@ -190,7 +162,6 @@ private:
       ++partition_size;
       rem = set_size % partition_size;
     }
-
     assert(partition_size >= 3);
     assert(rem >= 3 || rem == 0);
   }
@@ -200,28 +171,11 @@ private:
     size_t rem = 0;
     findPartitionSize(partition_size, rem);
     size_t partitions_number = points_.size() / partition_size + (rem != 0);
-
-    if (rem) {
-      assert((partitions_number - 1) * partition_size + rem == points_.size());
-    } else {
-      assert(partitions_number * partition_size == points_.size());
-    }
-
     for (size_t point_idx = 0; point_idx < points_.size(); ++point_idx) {
       if (point_idx % partition_size == 0) {
         partitions_.push_back(std::vector<Point>{});
       }
       partitions_.back().push_back(points_[point_idx]);
-    }
-
-    for (size_t i = 0; i < partitions_number - 1; ++i) {
-      assert(partitions_[i].size() == partition_size);
-    }
-
-    if (rem) {
-      assert(partitions_.back().size() == rem);
-    } else {
-      assert(partitions_.back().size() == partition_size);
     }
   }
 };

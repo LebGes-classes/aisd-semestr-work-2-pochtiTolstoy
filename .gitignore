@@ -2,6 +2,7 @@ a.out
 main
 build
 app
+dbg
 
 # Prerequisites
 *.d
