@@ -1,20 +1,21 @@
 #pragma once
 
+#include "ConvexHullBase.hpp"
 #include "GrahamConvexHull.hpp"
 #include "JarvisConvexHull.hpp"
 #include <cassert>
 #include <stdexcept>
 
-class ChanConvexHull {
+class ChanConvexHull : public ConvexHullBase {
 public:
-  ChanConvexHull(const std::vector<Point> &set) : set_{set} {
-    if (set.size() < 3) {
+  ChanConvexHull(const std::vector<Point> &points) : ConvexHullBase(points) {
+    if (points.size() < 3) {
       throw std::invalid_argument("At least 3 points to build convex hull");
     }
-    findConvexHull();
+    computeHull();
   }
 
-  std::vector<Point> getChanHull() const { return final_hull_; }
+  const std::vector<Point> &getHull() const override { return hull_; }
 
   std::vector<GrahamConvexHull> getGrahamPartitions() const {
     return graham_partitions_;
@@ -26,53 +27,43 @@ public:
     if (idx >= graham_partitions_.size()) {
       throw std::invalid_argument("Wrong index for partitions!");
     }
-    return graham_partitions_[idx].getConvexHull();
+    return graham_partitions_[idx].getHull();
   }
 
-  size_t size() const { return final_hull_.size(); }
+  size_t size() const override { return hull_.size(); }
 
 private:
-  size_t partition_size_;
-  std::vector<Point> set_;
   std::vector<std::vector<Point>> partitions_;
   std::vector<GrahamConvexHull> graham_partitions_;
-  std::vector<Point> final_hull_;
 
-  void findConvexHull() {
+  void computeHull() override {
     // TODO : BINARY SEARCH INSIDE BUCKET INSTEAD OF LINEAR TIME
-    generatePartition();
-    // TODO : delete debug vector
-    std::vector<Point> pure_graham_hull;
+    generatePartitions();
     for (size_t bucket_idx = 0; bucket_idx < partitions_.size(); ++bucket_idx) {
       graham_partitions_.push_back({partitions_[bucket_idx]});
       // TODO : BIN SEARCH
-      const std::vector<Point> &graham_hull =
-          graham_partitions_[bucket_idx].getConvexHull();
-      for (const auto &point : graham_hull) {
-        pure_graham_hull.push_back(point);
-      }
+      // const std::vector<Point> &graham_hull =
+      //     graham_partitions_[bucket_idx].getConvexHull();
+      // BUG : DOUBLE POINTS IN GRAHAM
+      // for (const auto &point : graham_hull) {
+      //   pure_graham_hull.push_back(point);
     }
-
-    // TODO : delete debug pure_jarvis_hull vector
-    GrahamConvexHull grahamHull(pure_graham_hull);
-    pure_graham_hull = grahamHull.getConvexHull();
-
-    Point entryPoint = findEntryPoint();
-    std::vector<Point> &current_bucket = partitions_[0];
-
     std::cout << "Points on hull : " << std::endl;
-    for (const auto &elem : pure_graham_hull) {
+    for (const auto &elem : points_) {
       elem.display_log();
       std::cout << std::endl;
     }
     std::cout << std::endl;
 
+    Point entryPoint = findEntryPoint();
+    std::vector<Point> &current_bucket = partitions_[0];
+
     std::cout << "First point on hull" << std::endl;
     entryPoint.display_log();
     std::cout << std::endl;
-    pure_graham_hull[0].display_log();
+    // pure_graham_hull[0].display_log();
     std::cout << std::endl;
-    assert(entryPoint == pure_graham_hull[0]);
+    // assert(entryPoint == pure_graham_hull[0]);
 
     Point best_bucket_point =
         findNextPointInPartition(current_bucket, entryPoint);
@@ -80,9 +71,10 @@ private:
     std::cout << "Second point on hull : " << std::endl;
     best_bucket_point.display_log();
     std::cout << std::endl;
-    pure_graham_hull[1].display_log();
+    // pure_graham_hull[1].display_log();
     std::cout << std::endl;
-    assert(best_bucket_point == pure_graham_hull[1]);
+    assert(0);
+    // assert(best_bucket_point == pure_graham_hull[1]);
 
     // std::vector<Point> hull;
     // const Point &entryPoint = findEntryPoint();
@@ -178,7 +170,7 @@ private:
   }
 
   void findPartitionSize(size_t &partition_size, size_t &rem) {
-    size_t set_size = set_.size();
+    size_t set_size = points_.size();
     if (set_size < 6) {
       partition_size = set_size;
       rem = 0;
@@ -186,11 +178,10 @@ private:
       assert(partition_size == set_size);
       assert(rem == 0);
 
-      partitions_.push_back(set_);
+      partitions_.push_back(points_);
       return;
     }
-    partition_size = set_.size() * 2 / 10;
-    std::cout << "partition size : " << partition_size << std::endl;
+    partition_size = points_.size() * 2 / 10;
     if (partition_size < 3) {
       partition_size = 3;
     }
@@ -204,24 +195,23 @@ private:
     assert(rem >= 3 || rem == 0);
   }
 
-  void generatePartition() {
+  void generatePartitions() {
     size_t partition_size = 0;
     size_t rem = 0;
     findPartitionSize(partition_size, rem);
-    size_t partitions_number = set_.size() / partition_size + (rem != 0);
+    size_t partitions_number = points_.size() / partition_size + (rem != 0);
 
     if (rem) {
-      assert((partitions_number - 1) * partition_size + rem == set_.size());
+      assert((partitions_number - 1) * partition_size + rem == points_.size());
     } else {
-      assert(partitions_number * partition_size == set_.size());
+      assert(partitions_number * partition_size == points_.size());
     }
 
-    for (size_t point_idx = 0; point_idx < set_.size(); ++point_idx) {
+    for (size_t point_idx = 0; point_idx < points_.size(); ++point_idx) {
       if (point_idx % partition_size == 0) {
         partitions_.push_back(std::vector<Point>{});
       }
-      // partitions_[bucket_idx][point_idx % partition_size] = set_[point_idx];
-      partitions_.back().push_back(set_[point_idx]);
+      partitions_.back().push_back(points_[point_idx]);
     }
 
     for (size_t i = 0; i < partitions_number - 1; ++i) {

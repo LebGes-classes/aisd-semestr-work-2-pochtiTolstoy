@@ -1,37 +1,32 @@
 #pragma once
 
+#include "ConvexHullBase.hpp"
 #include "Point.hpp"
 #include <vector>
 
-class JarvisConvexHull {
+class JarvisConvexHull : public ConvexHullBase {
 public:
-  JarvisConvexHull(const std::vector<Point> &set) : set_{set} {
-    find_jarvis_convex_hull();
+  JarvisConvexHull(const std::vector<Point> &points) : ConvexHullBase(points) {
+    computeHull();
   }
 
-  std::vector<Point> getConvexHull() {
-    if (hull_size_ > set_.size()) {
-      throw std::out_of_range("Convex hull size out of set range!");
-    }
-    std::vector<Point> result(set_.begin(), set_.begin() + hull_size_);
-    return result;
-  }
+  const std::vector<Point> &getHull() const override { return hull_; }
 
-  size_t size() const { return hull_size_; }
+  size_t size() const override { return hull_size_; }
 
 private:
-  std::vector<Point> set_;
   size_t hull_size_;
 
-  void find_jarvis_convex_hull() {
-    const size_t set_size = set_.size();
+  void computeHull() override {
+    const size_t set_size = points_.size();
     if (set_size < 3) {
       this->hull_size_ = set_size;
+      this->hull_.assign(points_.begin(), points_.begin() + hull_size_);
       return;
     }
     // TODO : jarvis swap entry point, should be at [0] index
-    std::swap(set_[0], set_[get_entry_point_idx()]);
-    Point entry_point = set_[0];
+    std::swap(points_[0], points_[get_entry_point_idx()]);
+    Point entry_point = points_[0];
     Point current_point = entry_point;
     size_t set_cell_to_update = 0;
     do {
@@ -39,22 +34,24 @@ private:
            ++candidate) {
         // set_[set_cell_to_update] - best candidate
         // set_[cnadidate] - current candidate
-        if (jarvis_compare(set_[candidate], set_[set_cell_to_update],
+        if (jarvis_compare(points_[candidate], points_[set_cell_to_update],
                            current_point)) {
-          std::swap(set_[candidate], set_[set_cell_to_update]);
+          std::swap(points_[candidate], points_[set_cell_to_update]);
         }
       }
-      current_point = set_[set_cell_to_update++];
+      current_point = points_[set_cell_to_update++];
     } while (current_point != entry_point);
     this->hull_size_ = set_cell_to_update;
+    this->hull_.assign(points_.begin(),
+                       points_.begin() + std::min(hull_size_, points_.size()));
   }
 
   size_t get_entry_point_idx() {
     size_t entry_point_idx = 0;
-    for (size_t i = entry_point_idx + 1; i != set_.size(); ++i) {
-      bool y_less = (set_[i].y_ < set_[entry_point_idx].y_);
-      bool x_less = (set_[i].x_ < set_[entry_point_idx].x_);
-      bool y_eq = (std::abs(set_[i].y_ - set_[entry_point_idx].y_) < EPS);
+    for (size_t i = entry_point_idx + 1; i != points_.size(); ++i) {
+      bool y_less = (points_[i].y_ < points_[entry_point_idx].y_);
+      bool x_less = (points_[i].x_ < points_[entry_point_idx].x_);
+      bool y_eq = (std::abs(points_[i].y_ - points_[entry_point_idx].y_) < EPS);
       if (y_less || (y_eq && x_less))
         entry_point_idx = i;
     }
@@ -63,6 +60,8 @@ private:
 
   bool jarvis_compare(const Point &candidate, const Point &current_candidate,
                       const Point &current_point) {
+    if (candidate == current_candidate)
+      return false;
     double cross = cross_product(current_point, current_candidate, candidate);
     if (std::abs(cross) < EPS) {
       return (distance_squared(current_point, candidate) >

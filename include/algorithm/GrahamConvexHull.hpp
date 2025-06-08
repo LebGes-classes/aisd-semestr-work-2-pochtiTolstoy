@@ -1,9 +1,10 @@
 #pragma once
 
+#include "ConvexHullBase.hpp"
 #include "Point.hpp"
 #include <vector>
 
-class GrahamConvexHull {
+class GrahamConvexHull : public ConvexHullBase {
 public:
   class Vector {
   public:
@@ -21,16 +22,15 @@ public:
     }
   };
 
-  GrahamConvexHull(const std::vector<Point> &set) : set_{set} { grahamScan(); }
+  GrahamConvexHull(const std::vector<Point> &set) : ConvexHullBase(set) {
+    computeHull();
+  }
 
-  std::vector<Point> getConvexHull() const { return hull_; }
+  const std::vector<Point> &getHull() const override { return hull_; }
 
-  size_t size() const { return hull_.size(); }
+  size_t size() const override { return hull_.size(); }
 
 private:
-  std::vector<Point> set_;
-  std::vector<Point> hull_;
-
   void sortPoints(std::vector<Point> &vect, Point centralP) {
     int j = 0;
     Point temp;
@@ -57,12 +57,12 @@ private:
     }
   }
 
-  void grahamScan() {
-    Point lowestP = set_[0];
+  void computeHull() override {
+    Point lowestP = points_[0];
     Point currP;
 
-    for (int i = 1; i < set_.size(); i++) {
-      currP = set_[i];
+    for (int i = 1; i < points_.size(); i++) {
+      currP = points_[i];
 
       if (lowestP.y_ > currP.y_ ||
           (lowestP.y_ == currP.y_ && lowestP.x_ > currP.x_)) {
@@ -72,9 +72,9 @@ private:
 
     std::vector<Point> vc;
 
-    for (int i = 0; i < set_.size(); i++) {
-      if (set_[i] != lowestP) {
-        vc.push_back(set_[i]);
+    for (int i = 0; i < points_.size(); i++) {
+      if (points_[i] != lowestP) {
+        vc.push_back(points_[i]);
       }
     }
 
@@ -105,9 +105,9 @@ private:
 
       int j = i;
       while (Vector::cross(v2, v1) < 0) {
-        std::cout << "deleted point: " << std::endl
-                  << "x:" << p2.x_ << std::endl
-                  << "y: " << p2.y_ << std::endl;
+        // std::cout << "deleted point: " << std::endl
+        //           << "x:" << p2.x_ << std::endl
+        //           << "y: " << p2.y_ << std::endl;
         result.push_back(p3);
 
         p3 = result.back();

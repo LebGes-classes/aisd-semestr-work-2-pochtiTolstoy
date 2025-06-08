@@ -33,6 +33,15 @@ public:
     window.draw(text_);
   }
 
+  Button &operator=(Button &&other) noexcept {
+    if (this != &other) {
+      shape_ = std::move(other.shape_);
+      text_ = std::move(other.text_);
+      text_.setFont(font_);
+    }
+    return *this;
+  }
+
 private:
   sf::RectangleShape shape_;
   sf::Text text_;
