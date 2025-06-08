@@ -63,7 +63,7 @@ private:
       return (distance_squared(current_point, candidate) >
               distance_squared(current_point, current_candidate));
     }
-    return cross > 0;
+    return cross < 0;
   }
 
   double cross_product(const Point &a, const Point &b, const Point &c) {
