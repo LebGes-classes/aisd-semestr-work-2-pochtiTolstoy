@@ -2,6 +2,7 @@
 
 #include "ConvexHullBase.hpp"
 #include "Point.hpp"
+#include <cassert>
 #include <vector>
 
 class GrahamConvexHull : public ConvexHullBase {
@@ -127,6 +128,7 @@ private:
     }
 
     this->hull_ = result;
+    assert(hull_.size() <= points_.size());
   }
 };
 

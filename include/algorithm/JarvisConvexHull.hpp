@@ -2,6 +2,7 @@
 
 #include "ConvexHullBase.hpp"
 #include "Point.hpp"
+#include <cassert>
 #include <vector>
 
 class JarvisConvexHull : public ConvexHullBase {
@@ -18,37 +19,34 @@ private:
   size_t hull_size_;
 
   void computeHull() override {
-    const size_t set_size = points_.size();
-    if (set_size < 3) {
-      this->hull_size_ = set_size;
-      this->hull_.assign(points_.begin(), points_.begin() + hull_size_);
+    const size_t points_number = points_.size();
+    if (points_number < 3) {
+      hull_ = points_;
+      hull_size_ = points_number;
       return;
     }
-    // TODO : jarvis swap entry point, should be at [0] index
-    std::swap(points_[0], points_[get_entry_point_idx()]);
-    Point entry_point = points_[0];
-    Point current_point = entry_point;
-    size_t set_cell_to_update = 0;
+
+    size_t leftmost = get_entry_point_idx();
+    size_t current = leftmost;
+    hull_.clear();
     do {
-      for (size_t candidate = set_cell_to_update; candidate != set_size;
-           ++candidate) {
-        // set_[set_cell_to_update] - best candidate
-        // set_[cnadidate] - current candidate
-        if (jarvis_compare(points_[candidate], points_[set_cell_to_update],
-                           current_point)) {
-          std::swap(points_[candidate], points_[set_cell_to_update]);
+      hull_.push_back(points_[current]);
+      size_t next = (current + 1) % points_number;
+      for (size_t i = 0; i < points_number; ++i) {
+        if (jarvis_compare(points_[i], points_[next], points_[current])) {
+          next = i;
         }
       }
-      current_point = points_[set_cell_to_update++];
-    } while (current_point != entry_point);
-    this->hull_size_ = set_cell_to_update;
-    this->hull_.assign(points_.begin(),
-                       points_.begin() + std::min(hull_size_, points_.size()));
+      current = next;
+    } while (current != leftmost);
+    hull_size_ = hull_.size();
+    assert(hull_[0] == points_[leftmost]);
+    assert(hull_.size() <= points_.size());
   }
 
   size_t get_entry_point_idx() {
     size_t entry_point_idx = 0;
-    for (size_t i = entry_point_idx + 1; i != points_.size(); ++i) {
+    for (size_t i = 1; i != points_.size(); ++i) {
       bool y_less = (points_[i].y_ < points_[entry_point_idx].y_);
       bool x_less = (points_[i].x_ < points_[entry_point_idx].x_);
       bool y_eq = (std::abs(points_[i].y_ - points_[entry_point_idx].y_) < EPS);
@@ -60,8 +58,6 @@ private:
 
   bool jarvis_compare(const Point &candidate, const Point &current_candidate,
                       const Point &current_point) {
-    if (candidate == current_candidate)
-      return false;
     double cross = cross_product(current_point, current_candidate, candidate);
     if (std::abs(cross) < EPS) {
       return (distance_squared(current_point, candidate) >

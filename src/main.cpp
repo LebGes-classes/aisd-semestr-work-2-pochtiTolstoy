@@ -79,15 +79,15 @@ private:
   }
 
   void generateNewSet() {
-    pointSet.generate_points(POINTS_NUMBER);
+    pointSet.generate_points();
     initializeHullAlgorithm();
     createVisualElements();
   }
 
   void initializeHullAlgorithm() {
-    hullAlgorithm = std::make_unique<ChanConvexHull>(pointSet.get_set());
+    // hullAlgorithm = std::make_unique<ChanConvexHull>(pointSet.get_set());
     // hullAlgorithm = std::make_unique<GrahamConvexHull>(pointSet.get_set());
-    // hullAlgorithm = std::make_unique<JarvisConvexHull>(pointSet.get_set());
+    hullAlgorithm = std::make_unique<JarvisConvexHull>(pointSet.get_set());
   }
 
   void createVisualElements() {
@@ -101,7 +101,11 @@ private:
     for (const auto &point : pointSet.get_set()) {
       sf::CircleShape circle(SF_POINT_RADIUS);
       circle.setPointCount(32);
-      circle.setFillColor(sf::Color(127, 140, 170));
+      if (point == hullAlgorithm->getHull()[0]) {
+        circle.setFillColor(sf::Color(0, 255, 0));
+      } else {
+        circle.setFillColor(sf::Color(127, 140, 170));
+      }
       circle.setOutlineColor(sf::Color::Black);
       circle.setOutlineThickness(2);
       circle.setPosition(point.x_ - SF_POINT_RADIUS,
@@ -129,14 +133,6 @@ private:
         }
       }
     }
-    // if (auto JarvisHull =
-    //         dynamic_cast<JarvisConvexHull *>(hullAlgorithm.get())) {
-    //   exit(EXIT_FAILURE);
-    // }
-    // if (auto GrahamHull =
-    //         dynamic_cast<GrahamConvexHull *>(hullAlgorithm.get())) {
-    //   exit(EXIT_FAILURE);
-    // }
   }
 
   void createHullLines() {
