@@ -26,7 +26,6 @@ public:
     if (!font.loadFromFile("../res/AgaveNerdFontMono-Bold.ttf")) {
       throw std::runtime_error("Failed to load font!");
     }
-    generateNewSet();
   }
 
   void run() {
@@ -43,6 +42,7 @@ private:
   PointSet pointSet;
   std::unique_ptr<ConvexHullBase> hullAlgorithm;
   std::vector<sf::CircleShape> points;
+  std::vector<sf::Text> pointLabels;
   std::vector<sf::VertexArray> partitionMeshes;
   sf::VertexArray hullLines;
   sf::RectangleShape paddingArea;
@@ -79,6 +79,14 @@ private:
   }
 
   void generateNewSet() {
+    // pointSet.generate_points(6);
+    // TODO : DEBUG
+    // pointSet = PointSet({{736.28, 153.004},
+    //                      {1782.49, 388.164},
+    //                      {992.796, 498.01},
+    //                      {899.033, 841.504},
+    //                      {1181.24, 803.516},
+    //                      {833.415, 418.588}});
     pointSet.generate_points();
     initializeHullAlgorithm();
     createVisualElements();
@@ -98,6 +106,7 @@ private:
 
   void createPoints() {
     points.clear();
+    size_t i = 0;
     for (const auto &point : pointSet.get_set()) {
       sf::CircleShape circle(SF_POINT_RADIUS);
       circle.setPointCount(32);
@@ -136,6 +145,7 @@ private:
   }
 
   void createHullLines() {
+    pointLabels.clear();
     const auto &hullPoints = hullAlgorithm->getHull();
     hullLines = sf::VertexArray(sf::LineStrip, hullPoints.size() + 1);
 
@@ -145,6 +155,20 @@ private:
     }
     if (!hullPoints.empty()) {
       hullLines[hullPoints.size()] = hullLines[0];
+    }
+
+    for (size_t i = 0; i < hullPoints.size(); ++i) {
+      sf::Text label;
+      label.setFont(font);
+      label.setCharacterSize(16);
+      label.setString(std::to_string(i));
+      label.setFillColor(sf::Color::White);
+
+      // Position the label near the point
+      label.setPosition(hullPoints[i].x_ + SF_POINT_RADIUS + 2,
+                        hullPoints[i].y_ - SF_POINT_RADIUS);
+
+      pointLabels.push_back(std::move(label));
     }
   }
 
@@ -179,6 +203,10 @@ private:
 
     for (const auto &point : points) {
       window.draw(point);
+    }
+
+    for (const auto &label : pointLabels) {
+      window.draw(label);
     }
 
     if (showMesh) {
