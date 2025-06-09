@@ -96,14 +96,14 @@ private:
     //                      {899.033, 841.504},
     //                      {1181.24, 803.516},
     //                      {833.415, 418.588}});
-    pointSet.generate_points();
+    pointSet.generate_points(500);
     initializeHullAlgorithm();
     createVisualElements();
   }
 
   void initializeHullAlgorithm() {
-    hullAlgorithm = std::make_unique<ChanConvexHull>(pointSet.get_set());
-    // hullAlgorithm = std::make_unique<GrahamConvexHull>(pointSet.get_set());
+    // hullAlgorithm = std::make_unique<ChanConvexHull>(pointSet.get_set());
+    hullAlgorithm = std::make_unique<GrahamConvexHull>(pointSet.get_set());
     // hullAlgorithm = std::make_unique<JarvisConvexHull>(pointSet.get_set());
   }
 

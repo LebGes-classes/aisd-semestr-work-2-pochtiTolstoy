@@ -9,7 +9,7 @@ class GrahamConvexHull : public ConvexHullBase {
 public:
   class Vector {
   public:
-    int x, y;
+    double x, y;
 
     Vector() : x{0}, y{0} {}
 
