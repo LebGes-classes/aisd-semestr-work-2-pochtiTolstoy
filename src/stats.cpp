@@ -10,8 +10,8 @@
 int main() {
   // Configuration
   bool circular = false;
-  const std::vector<size_t> sizes_random{100,   500,   1000,  5000,
-                                         10000, 50000, 100000};
+  const std::vector<size_t> sizes_random{100,   500,   1000, 5000,
+                                         10000, 25000, 50000};
   const std::vector<size_t> sizes_circular{100, 200, 300, 400, 500, 600, 700};
   std::vector<size_t> sizes;
   if (circular) {
