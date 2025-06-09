@@ -50,15 +50,15 @@ private:
     }
 
     // TODO : delete debug vector
-    JarvisConvexHull jarvis_convex_hull(points_);
-    std::vector<Point> debug_vec = jarvis_convex_hull.getHull();
+    // JarvisConvexHull jarvis_convex_hull(points_);
+    // std::vector<Point> debug_vec = jarvis_convex_hull.getHull();
 
     // TODO : delete output
-    std::cout << "Original points : " << std::endl;
-    for (const auto &point : points_) {
-      point.display_log();
-      std::cout << std::endl;
-    }
+    // std::cout << "Original points : " << std::endl;
+    // for (const auto &point : points_) {
+    //   point.display_log();
+    //   std::cout << std::endl;
+    // }
 
     // generate graham partitions
     generatePartitions();
@@ -71,7 +71,7 @@ private:
     std::vector<point_tuple_t> hull_tuple;
     hull_tuple.push_back(entry_point);
 
-    assert(std::get<0>(entry_point) == debug_vec[0]);
+    // assert(std::get<0>(entry_point) == debug_vec[0]);
 
     // Create convex hull based on graham partitions
     size_t max_hull_size = points_.size();
@@ -116,7 +116,7 @@ private:
         break;
       }
 
-      assert(debug_vec[step + 1] == std::get<0>(best_candidate));
+      // assert(debug_vec[step + 1] == std::get<0>(best_candidate));
 
       hull_tuple.push_back(best_candidate);
     }
@@ -126,19 +126,19 @@ private:
       hull_.push_back(point);
     }
 
-    std::cout << "Chan algorithm : " << std::endl;
-    for (const auto &point : hull_) {
-      point.display_log();
-      std::cout << std::endl;
-    }
-
-    std::cout << "Correct answer : " << std::endl;
-    for (const auto &point : debug_vec) {
-      point.display_log();
-      std::cout << std::endl;
-    }
-
-    assert(hull_.size() == jarvis_convex_hull.size());
+    // std::cout << "Chan algorithm : " << std::endl;
+    // for (const auto &point : hull_) {
+    //   point.display_log();
+    //   std::cout << std::endl;
+    // }
+    //
+    // std::cout << "Correct answer : " << std::endl;
+    // for (const auto &point : debug_vec) {
+    //   point.display_log();
+    //   std::cout << std::endl;
+    // }
+    //
+    // assert(hull_.size() == jarvis_convex_hull.size());
   }
 
   point_tuple_t
