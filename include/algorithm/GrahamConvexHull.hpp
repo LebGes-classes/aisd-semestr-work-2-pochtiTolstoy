@@ -9,7 +9,7 @@ class GrahamConvexHull : public ConvexHullBase {
 public:
   class Vector {
   public:
-    int x, y;
+    double x, y;
 
     Vector() : x{0}, y{0} {}
 
@@ -18,7 +18,7 @@ public:
       this->y = p2.y_ - p1.y_;
     }
 
-    static int cross(const Vector &v1, const Vector &v2) {
+    static double cross(const Vector &v1, const Vector &v2) {
       return v1.x * v2.y - v1.y * v2.x;
     }
   };

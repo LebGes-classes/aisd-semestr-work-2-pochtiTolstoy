@@ -9,6 +9,8 @@
 
 class ChanConvexHull : public ConvexHullBase {
 public:
+  enum TURN { RIGHT_TURN = -1, COLLINEAR = 0, LEFT_TURN = 1 };
+
   ChanConvexHull(const std::vector<Point> &points) : ConvexHullBase(points) {
     if (points.size() < 3) {
       throw std::invalid_argument("At least 3 points to build convex hull");
@@ -90,10 +92,12 @@ private:
           size_t next_pos = (pos_in_partition + 1) % subhull.size();
           Point next_point = subhull[next_pos];
           candidate = {next_point, partition_idx, next_pos};
-          // assert(0 && "branch: same graham set");
         } else {
           // O(log(m))
-          candidate = findNextPointInPartitionLinear(
+          // candidate = findNextPointInPartitionLinear(
+          //     subhull, std::get<0>(current_point));
+          // std::get<1>(candidate) = partition_idx;
+          candidate = findNextPointInPartitionBinSearch(
               subhull, std::get<0>(current_point));
           std::get<1>(candidate) = partition_idx;
         }
@@ -137,31 +141,53 @@ private:
     assert(hull_.size() == jarvis_convex_hull.size());
   }
 
-  point_tuple_t findNextPointInPartition(const std::vector<Point> &hull,
-                                         const Point &point) {
-
+  point_tuple_t
+  findNextPointInPartitionBinSearch(const std::vector<Point> &hull,
+                                    const Point &point) {
     assert(hull.size() >= 3);
-    auto isRightTurn = [](const Point &a, const Point &b,
-                          const Point &pivot) -> bool {
-      return cross_product(pivot, a, b) < 0;
-    };
 
-    int low = 0, high = static_cast<int>(hull.size());
-    auto next = [&](int i) { return (i + 1) % hull.size(); };
+    int left = 0;
+    int mid = 0;
+    int right = hull.size();
+    int size = hull.size();
 
-    while (low < high) {
-      int mid = (low + high) / 2;
-      int mid_next = next(mid);
+    TURN mid_prev_turn = COLLINEAR;
+    TURN mid_next_turn = COLLINEAR;
+    TURN mid_side_turn = COLLINEAR;
+    TURN prev_turn = orientation(point, hull[0], hull[size - 1]);
+    TURN next_turn = orientation(point, hull[0], hull[(left + 1) % right]);
 
-      if (isRightTurn(hull[mid], hull[mid_next], point)) {
-        high = mid;
+    while (left < right) {
+      mid = left + (right - left) / 2;
+      if (((mid - 1) % size) >= 0) {
+        mid_prev_turn = orientation(point, hull[mid], hull[(mid - 1) % size]);
       } else {
-        low = mid + 1;
+        mid_prev_turn = orientation(point, hull[mid], hull[size - 1]);
+      }
+      mid_next_turn = orientation(point, hull[mid], hull[(mid + 1) % size]);
+      mid_side_turn = orientation(point, hull[left], hull[mid]);
+      if (mid_prev_turn != RIGHT_TURN && mid_next_turn != RIGHT_TURN) {
+        return {hull[mid], 0, mid};
+      } else if ((mid_side_turn == LEFT_TURN &&
+                  (next_turn == RIGHT_TURN || prev_turn == next_turn)) ||
+                 (mid_side_turn == RIGHT_TURN && mid_prev_turn == RIGHT_TURN)) {
+        right = mid;
+      } else {
+        left = mid + 1;
+        prev_turn = static_cast<TURN>(-mid_next_turn);
+        assert(left < size);
+        next_turn = orientation(point, hull[left], hull[(left + 1) % size]);
       }
     }
+    return {hull[left], 0, left};
+  }
 
-    size_t next_pos = low % hull.size();
-    return {hull[next_pos], 0, next_pos};
+  TURN orientation(const Point &p, const Point &q, const Point &r) {
+    double cross = cross_product(p, q, r);
+    if (std::abs(cross) < EPS) {
+      return COLLINEAR;
+    }
+    return (cross > 0) ? LEFT_TURN : RIGHT_TURN;
   }
 
   bool jarvis_compare(const Point &candidate, const Point &current_candidate,
