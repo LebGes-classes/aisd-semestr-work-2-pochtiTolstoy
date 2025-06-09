@@ -5,6 +5,7 @@
 #include "../include/graphics/Button.hpp"
 #include <SFML/Graphics.hpp>
 #include <iostream>
+#include <memory>
 
 const sf::Color BACKGROUND_COLOR(51, 52, 70);
 const sf::Color BORDER_COLOR(40, 42, 54);
@@ -50,6 +51,7 @@ private:
   Button toggleMeshButton;
   PointSet pointSet;
   std::unique_ptr<ConvexHullBase> hullAlgorithm;
+  // std::unique_ptr<ConvexHullBase> hullAlgorithm2;
   std::vector<sf::CircleShape> points;
   std::vector<sf::Text> pointLabels;
   std::vector<sf::VertexArray> partitionMeshes;
@@ -96,7 +98,7 @@ private:
     //                      {899.033, 841.504},
     //                      {1181.24, 803.516},
     //                      {833.415, 418.588}});
-    pointSet.generate_points(500);
+    pointSet.generate_points(50000);
     initializeHullAlgorithm();
     createVisualElements();
   }
@@ -105,6 +107,13 @@ private:
     // hullAlgorithm = std::make_unique<ChanConvexHull>(pointSet.get_set());
     hullAlgorithm = std::make_unique<GrahamConvexHull>(pointSet.get_set());
     // hullAlgorithm = std::make_unique<JarvisConvexHull>(pointSet.get_set());
+    // hullAlgorithm2 = std::make_unique<JarvisConvexHull>(pointSet.get_set());
+    // std::vector<Point> res1 = hullAlgorithm->getHull();
+    // std::vector<Point> res2 = hullAlgorithm2->getHull();
+    // assert(res1.size() == res2.size());
+    // for (size_t i = 0; i < res1.size(); ++i) {
+    //   assert(res1[i] == res2[i]);
+    // }
   }
 
   void createVisualElements() {
