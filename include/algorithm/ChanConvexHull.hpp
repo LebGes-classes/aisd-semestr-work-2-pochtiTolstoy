@@ -5,9 +5,12 @@
 #include "JarvisConvexHull.hpp"
 #include <cassert>
 #include <stdexcept>
+#include <tuple>
 
 class ChanConvexHull : public ConvexHullBase {
 public:
+  enum TURN { RIGHT_TURN = -1, COLLINEAR = 0, LEFT_TURN = 1 };
+
   ChanConvexHull(const std::vector<Point> &points) : ConvexHullBase(points) {
     if (points.size() < 3) {
       throw std::invalid_argument("At least 3 points to build convex hull");
@@ -36,6 +39,9 @@ private:
   std::vector<std::vector<Point>> partitions_;
   std::vector<GrahamConvexHull> graham_partitions_;
 
+  // point_tuple_t : Point, graham_partition, position in partition
+  using point_tuple_t = std::tuple<Point, size_t, size_t>;
+
   void computeHull() override {
     if (points_.size() < 6) {
       GrahamConvexHull graham_convex_hull(points_);
@@ -44,170 +50,145 @@ private:
     }
 
     // TODO : delete debug vector
-    JarvisConvexHull jarvis_convex_hull(points_);
-    std::vector<Point> debug_vec = jarvis_convex_hull.getHull();
+    // JarvisConvexHull jarvis_convex_hull(points_);
+    // std::vector<Point> debug_vec = jarvis_convex_hull.getHull();
 
+    // TODO : delete output
+    // std::cout << "Original points : " << std::endl;
     // for (const auto &point : points_) {
-    // point.display_log();
-    // std::cout << std::endl;
+    //   point.display_log();
+    //   std::cout << std::endl;
     // }
 
+    // generate graham partitions
     generatePartitions();
     for (size_t bucket_idx = 0; bucket_idx < partitions_.size(); ++bucket_idx) {
       graham_partitions_.push_back({partitions_[bucket_idx]});
     }
 
-    Point entry_point = findEntryPoint();
-    hull_.clear();
-    hull_.push_back(entry_point);
+    // Find entry point
+    point_tuple_t entry_point = findEntryPoint();
+    std::vector<point_tuple_t> hull_tuple;
+    hull_tuple.push_back(entry_point);
 
-    assert(hull_.front() == debug_vec[0]);
+    // assert(std::get<0>(entry_point) == debug_vec[0]);
 
+    // Create convex hull based on graham partitions
     size_t max_hull_size = points_.size();
     for (size_t step = 0; step < max_hull_size; ++step) {
-      Point current_point = hull_.back();
-      Point best_candidate;
+      point_tuple_t current_point = hull_tuple.back();
+      point_tuple_t best_candidate = current_point;
       bool first = true;
-      for (const auto &partition : graham_partitions_) {
-        const auto &subhull = partition.getHull();
-        if (subhull.empty())
-          continue;
-        Point candidate = findNextPointInPartition(subhull, current_point);
-        if (first || jarvis_compare(candidate, best_candidate, current_point)) {
+
+      for (size_t partition_idx = 0; partition_idx < graham_partitions_.size();
+           ++partition_idx) {
+        const auto &subhull = graham_partitions_[partition_idx].getHull();
+        assert(!subhull.empty());
+
+        point_tuple_t candidate;
+        if (std::get<1>(current_point) == partition_idx) {
+          // O(1)
+          size_t pos_in_partition = std::get<2>(current_point);
+          size_t next_pos = (pos_in_partition + 1) % subhull.size();
+          Point next_point = subhull[next_pos];
+          candidate = {next_point, partition_idx, next_pos};
+        } else {
+          // O(log(m))
+          // candidate = findNextPointInPartitionLinear(
+          //     subhull, std::get<0>(current_point));
+          // std::get<1>(candidate) = partition_idx;
+          candidate = findNextPointInPartitionBinSearch(
+              subhull, std::get<0>(current_point));
+          std::get<1>(candidate) = partition_idx;
+        }
+
+        // O(1)
+        if (first ||
+            jarvis_compare(std::get<0>(candidate), std::get<0>(best_candidate),
+                           std::get<0>(current_point))) {
           best_candidate = candidate;
           first = false;
         }
       }
-      if (best_candidate == entry_point) {
+
+      // Close convex hull
+      if (std::get<0>(best_candidate) == std::get<0>(entry_point)) {
         break;
       }
-      // assert(debug_vec[step + 1] == best_candidate);
-      hull_.push_back(best_candidate);
+
+      // assert(debug_vec[step + 1] == std::get<0>(best_candidate));
+
+      hull_tuple.push_back(best_candidate);
     }
+
+    hull_.clear();
+    for (const auto &[point, i, j] : hull_tuple) {
+      hull_.push_back(point);
+    }
+
+    // std::cout << "Chan algorithm : " << std::endl;
     // for (const auto &point : hull_) {
-    // point.display_log();
-    // std::cout << std::endl;
+    //   point.display_log();
+    //   std::cout << std::endl;
     // }
+    //
+    // std::cout << "Correct answer : " << std::endl;
+    // for (const auto &point : debug_vec) {
+    //   point.display_log();
+    //   std::cout << std::endl;
+    // }
+    //
     // assert(hull_.size() == jarvis_convex_hull.size());
   }
 
-  // Point findNextPointInPartition(const std::vector<Point> &hull,
-  //                                const Point &p) {
-  //   int left = 0;
-  //   int right = hull.size();
-  //   while (right - left > 1) {
-  //     int mid = (left + right) / 2;
-  //     int mid_next = (mid + 1) % hull.size();
-  //     int mid_prev = (mid - 1 + hull.size()) % hull.size();
-  //
-  //     double cross_next = cross_product(p, hull[mid], hull[mid_next]);
-  //     double cross_prev = cross_product(p, hull[mid_prev], hull[mid]);
-  //
-  //     if (cross_prev >= 0 && cross_next >= 0 && hull[mid] != p) {
-  //       return hull[mid];
-  //     }
-  //
-  //     double cross_left = cross_product(p, hull[left], hull[mid]);
-  //     if (cross_left > 0) {
-  //       if (cross_prev < 0)
-  //         right = mid;
-  //       else
-  //         left = mid;
-  //     } else {
-  //       if (cross_prev >= 0)
-  //         left = mid;
-  //       else
-  //         right = mid;
-  //     }
-  //   }
-  //
-  //   return cross_product(p, hull[left], hull[right % hull.size()]) > 0
-  //              ? hull[left]
-  //              : hull[right % hull.size()];
-  // }
-  Point findNextPointInPartitionLinear(const std::vector<Point> &hull,
-                                       const Point &p) {
-    int n = hull.size();
-    if (n == 0)
-      return Point(); // Возвращаем пустую точку при пустой оболочке
-    if (n == 1)
-      return hull[0]; // Если оболочка из одной точки
+  point_tuple_t
+  findNextPointInPartitionBinSearch(const std::vector<Point> &hull,
+                                    const Point &point) {
+    assert(hull.size() >= 3);
 
-    // Проверка, является ли p точкой на оболочке
-    for (int i = 0; i < n; i++) {
-      if (hull[i] == p) {
-        return hull[(i + 1) % n]; // Следующая точка в обходе
-      }
-    }
+    int left = 0;
+    int mid = 0;
+    int right = hull.size();
+    int size = hull.size();
 
-    // Линейный поиск точки с минимальным полярным углом
-    int best_index = 0;
-    for (int i = 1; i < n; i++) {
-      if (jarvis_compare(hull[i], hull[best_index], p)) {
-        best_index = i;
-      }
-    }
-    return hull[best_index];
-  }
+    TURN mid_prev_turn = COLLINEAR;
+    TURN mid_next_turn = COLLINEAR;
+    TURN mid_side_turn = COLLINEAR;
+    TURN prev_turn = orientation(point, hull[0], hull[size - 1]);
+    TURN next_turn = orientation(point, hull[0], hull[(left + 1) % right]);
 
-  Point findNextPointInPartition(const std::vector<Point> &hull,
-                                 const Point &p) {
-    int n = hull.size();
-    if (n == 0)
-      return Point(); // Возвращаем пустую точку при пустой оболочке
-    if (n == 1)
-      return hull[0]; // Если оболочка из одной точки
-
-    // Проверка, является ли p точкой на оболочке
-    for (int i = 0; i < n; i++) {
-      if (hull[i] == p) {
-        return hull[(i + 1) % n]; // Следующая точка в обходе
-      }
-    }
-
-    // Линейный поиск точки с минимальным полярным углом
-    int best_index = 0;
-    for (int i = 1; i < n; i++) {
-      if (jarvis_compare(hull[i], hull[best_index], p)) {
-        best_index = i;
-      }
-    }
-    return hull[best_index];
-  }
-  /*
-   *
-     Point findNextPointInPartition(const std::vector<Point> &partition,
-                                 const Point &current_point) {
-    size_t size = partition.size();
-    if (size == 1)
-      return partition[0];
-    if (size == 2) {
-      return jarvis_compare(partition[1], partition[0], current_point)
-                 ? partition[1]
-                 : partition[0];
-    }
-
-    auto get = [&](size_t idx) { return partition[idx % size]; };
-
-    size_t l = 0, r = size;
-    while (r - l > 1) {
-      size_t m = (l + r) / 2;
-      Point mid = get(m);
-      Point mid_next = get(m + 1);
-
-      double orient = cross_product(current_point, mid, mid_next);
-      if (orient < 0) {
-        r = m;
+    while (left < right) {
+      mid = left + (right - left) / 2;
+      if (((mid - 1) % size) >= 0) {
+        mid_prev_turn = orientation(point, hull[mid], hull[(mid - 1) % size]);
       } else {
-        l = m;
+        mid_prev_turn = orientation(point, hull[mid], hull[size - 1]);
+      }
+      mid_next_turn = orientation(point, hull[mid], hull[(mid + 1) % size]);
+      mid_side_turn = orientation(point, hull[left], hull[mid]);
+      if (mid_prev_turn != RIGHT_TURN && mid_next_turn != RIGHT_TURN) {
+        return {hull[mid], 0, mid};
+      } else if ((mid_side_turn == LEFT_TURN &&
+                  (next_turn == RIGHT_TURN || prev_turn == next_turn)) ||
+                 (mid_side_turn == RIGHT_TURN && mid_prev_turn == RIGHT_TURN)) {
+        right = mid;
+      } else {
+        left = mid + 1;
+        prev_turn = static_cast<TURN>(-mid_next_turn);
+        assert(left < size);
+        next_turn = orientation(point, hull[left], hull[(left + 1) % size]);
       }
     }
-
-    Point p1 = get(l);
-    Point p2 = get(r % size);
-    return cross_product(current_point, p1, p2) > 0 ? p2 : p1;
+    return {hull[left], 0, left};
   }
-  */
+
+  TURN orientation(const Point &p, const Point &q, const Point &r) {
+    double cross = cross_product(p, q, r);
+    if (std::abs(cross) < EPS) {
+      return COLLINEAR;
+    }
+    return (cross > 0) ? LEFT_TURN : RIGHT_TURN;
+  }
 
   bool jarvis_compare(const Point &candidate, const Point &current_candidate,
                       const Point &current_point) {
@@ -219,7 +200,7 @@ private:
     return cross < 0;
   }
 
-  double cross_product(const Point &a, const Point &b, const Point &c) {
+  static double cross_product(const Point &a, const Point &b, const Point &c) {
     return (b.x_ - a.x_) * (c.y_ - a.y_) - (b.y_ - a.y_) * (c.x_ - a.x_);
   }
 
@@ -229,25 +210,17 @@ private:
     return dx * dx + dy * dy;
   }
 
-  Point findEntryPoint() {
-    Point entryPoint = partitions_[0][0];
-    for (size_t row = 0; row < partitions_.size(); ++row) {
-      Point candidate = findEntryPointInPartition(partitions_[row]);
-      if (y_less_compare(candidate, entryPoint)) {
-        entryPoint = candidate;
+  point_tuple_t findEntryPoint() {
+    const Point &entry_point = graham_partitions_.front().getHull()[0];
+    point_tuple_t entry_point_tuple{entry_point, 0, 0};
+    for (size_t i = 1; i < graham_partitions_.size(); ++i) {
+      const Point &curr_point = graham_partitions_[i].getHull()[0];
+      const Point &best_point = std::get<0>(entry_point_tuple);
+      if (y_less_compare(curr_point, best_point)) {
+        entry_point_tuple = std::make_tuple(curr_point, i, 0);
       }
     }
-    return entryPoint;
-  }
-
-  Point findEntryPointInPartition(const std::vector<Point> &partition) {
-    size_t entry_point_idx = 0;
-    for (size_t i = 1; i < partition.size(); ++i) {
-      if (y_less_compare(partition[i], partition[entry_point_idx])) {
-        entry_point_idx = i;
-      }
-    }
-    return partition[entry_point_idx];
+    return entry_point_tuple;
   }
 
   bool y_less_compare(const Point &p1, const Point &p2) {
@@ -291,5 +264,27 @@ private:
       }
       partitions_.back().push_back(points_[point_idx]);
     }
+  }
+
+  point_tuple_t findNextPointInPartitionLinear(const std::vector<Point> &hull,
+                                               const Point &p) {
+    int size = hull.size();
+    assert(size >= 3);
+
+    for (int i = 0; i < size; ++i) {
+      if (hull[i] == p) {
+        assert(0 && "point can't be in hull, processed in other branch");
+        size_t next_pos = (i + 1) % size;
+        return {hull[next_pos], 0, next_pos};
+      }
+    }
+
+    int best_index = 0;
+    for (int i = 1; i < size; ++i) {
+      if (jarvis_compare(hull[i], hull[best_index], p)) {
+        best_index = i;
+      }
+    }
+    return {hull[best_index], 0, best_index};
   }
 };

@@ -69,6 +69,21 @@ public:
     }
   }
 
+  void generate_circular_points(size_t size) {
+    if (size < 3) {
+      throw std::invalid_argument("Should be generated at least 3 points!");
+    }
+    set_.clear();
+    set_.reserve(size);
+    const double angle_step = 2 * M_PI / size;
+    for (size_t i = 0; i < size; ++i) {
+      double angle = i * angle_step;
+      double x = cos(angle);
+      double y = sin(angle);
+      set_.emplace_back(x, y);
+    }
+  }
+
 private:
   std::vector<Point> set_;
   static constexpr size_t MIN_POINTS = 3;
