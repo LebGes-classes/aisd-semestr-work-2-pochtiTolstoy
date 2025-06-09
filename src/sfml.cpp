@@ -123,8 +123,8 @@ private:
   }
 
   void initializeHullAlgorithm() {
-    // hullAlgorithm = std::make_unique<ChanConvexHull>(pointSet.get_set());
-    hullAlgorithm = std::make_unique<GrahamConvexHull>(pointSet.get_set());
+    hullAlgorithm = std::make_unique<ChanConvexHull>(pointSet.get_set());
+    // hullAlgorithm = std::make_unique<GrahamConvexHull>(pointSet.get_set());
     // hullAlgorithm = std::make_unique<JarvisConvexHull>(pointSet.get_set());
     // hullAlgorithm2 = std::make_unique<JarvisConvexHull>(pointSet.get_set());
     // std::vector<Point> res1 = hullAlgorithm->getHull();
