@@ -16,5 +16,5 @@ debug:
 	g++ -O0 -g -std=c++20 sfml.cpp -lsfml-graphics -lsfml-window -lsfml-system -o dbg
 
 clean:
-	rm stats sfml dbg
+	rm stats sfml dbg *.csv *.png
 

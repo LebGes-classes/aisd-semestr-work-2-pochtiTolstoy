@@ -1,8 +1,20 @@
-#### Convex Hull Algorithms:
+### Convex Hull Chan Algorithm:
 ![sfml](./misc/hull.gif)
 
+---
 
-#### **Build and Run SFML Application**
+### Random Point Statistics:
+![plot](./misc/performance_comparison.png)
+![plot](./misc/large_n_performance.png)
+
+---
+
+### Circular Point Statistics:
+![plot](./misc/circular_performance.png)
+
+---
+
+### **Build and Run SFML Application**
 Compiles and executes the SFML graphics program:
 ```bash
 make sfml
@@ -12,7 +24,7 @@ make
 
 ---
 
-#### **Generate and View Statistics**
+### **Generate and View Statistics**
 Compiles and runs the statistics module:
 ```bash
 make stats
@@ -20,7 +32,7 @@ make stats
 
 ---
 
-#### **Generate Plots**
+### **Generate Plots**
 Visualize results using Python (requires `plot_results.py` dependencies):
 ```bash
 make plot
@@ -28,7 +40,7 @@ make plot
 
 ---
 
-#### **Debug Build**
+### **Debug Build**
 Compile the SFML application with debug symbols (no optimizations):
 ```bash
 make debug
@@ -38,7 +50,7 @@ make debug
 
 ---
 
-#### **Clean Build Artifacts**
+### **Clean Build Artifacts**
 Remove compiled binaries:
 ```bash
 make clean
@@ -73,5 +85,3 @@ Key files in the repository:
 - `stats.cpp`: Statistics processing program
 - `plot_results.py`: Results visualization script
 - `Makefile`: Build automation (this guide)
-## Build
-* For graphics install sfml - `sudo apt install libsfml-dev`
