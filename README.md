@@ -1,43 +1,77 @@
-# convex-hull
-Implementation of convex-hull algorithm
+#### Convex Hull Algorithms:
+![sfml](./misc/hull.gif)
 
-## Notes (delete later)
-n - размер входных данных  
-k - размер оболочки
 
-### Gift wrapping algorithm (Алгоритм Джарвиса)
-Ищем против часовой стрелки, начиная с определенной точки
-
-Описание:
-1. Возьмем точку p_0 нашего множества с самой маленькой y-координатой (если таких несколько, берем самую правую из них). Добавляем ее в ответ.
-
-2. На каждом следующем шаге для последнего добавленного p_i ищем p_{i+1} среди всех недобавленных точек и p_0 с макисмальным полярным углом относительно p_{i} (если углы равны, надо сравнивать по расстоянию). Добавляем p_{i+1} в ответ. Если p_{i+1} == p_{0} заканчиваем алгоритм.
-
-#### pseudo:
-```C
-Jarvis(S)
-    find i such that S[i] has the lowest y-coordinate and highest x - coordinate
-    p0 = S[i]
-    pi = p0
-    k = 0
-    do
-        k++
-        for (i = k..n)
-            if (S[i] has lower angle 
-                    and higher distance than S[k] in relation to pi) // comparator
-                swap(S[i], S[k])
-        pi = S[k]
-    while pi != p0
-    return k
+#### **Build and Run SFML Application**
+Compiles and executes the SFML graphics program:
+```bash
+make sfml
+# Or use the default target:
+make
 ```
-Берем массив точек, выбираем точку с наименьшей y коордой, очев она принадлежит оболочке.  
 
-Дальше эта штука работает фактически как selection sort с компаратором, который выбирает на позицию k лучшую точку относительно текущей pi. После того как выбрали лучшую точку на позцицю k, двигаем k на один, а текущая точка pi становится равна S[K], далее мы для этой точки снова ищем лучшую и.т.д.  
+---
 
-Когда контур замыкается (pi == p0), то k показывает количество точек в принадлежащих контуру облочки. А первые k элементов в исходном массиве S - точки контура.
+#### **Generate and View Statistics**
+Compiles and runs the statistics module:
+```bash
+make stats
+```
 
-Добавление каждой точки в ответ занимает O(n) времени, всего k точек в ответе, значит сложность O(nk).
-В худшем случае оболочка состоит из всех точек - O(n^2).
+---
 
+#### **Generate Plots**
+Visualize results using Python (requires `plot_results.py` dependencies):
+```bash
+make plot
+```
+
+---
+
+#### **Debug Build**
+Compile the SFML application with debug symbols (no optimizations):
+```bash
+make debug
+# Run the debug executable manually:
+./dbg
+```
+
+---
+
+#### **Clean Build Artifacts**
+Remove compiled binaries:
+```bash
+make clean
+```
+
+---
+
+### Prerequisites
+Ensure these dependencies are installed:
+- **Compiler**: `g++` (supports C++20)
+- **SFML Libraries**: `libsfml-graphics`, `libsfml-window`, `libsfml-system`
+- **Python**: `python3` + dependencies for `plot_results.py` (likely `matplotlib`/`pandas`)
+
+---
+
+### Installation Notes
+**SFML Setup (Ubuntu example)**:
+```bash
+sudo apt install g++ libsfml-dev
+```
+
+**Python Dependencies**:
+```bash
+pip3 install matplotlib pandas  # Adjust as needed for plot_results.py
+```
+
+---
+
+### Project Structure
+Key files in the repository:
+- `sfml.cpp`: SFML application source
+- `stats.cpp`: Statistics processing program
+- `plot_results.py`: Results visualization script
+- `Makefile`: Build automation (this guide)
 ## Build
 * For graphics install sfml - `sudo apt install libsfml-dev`
