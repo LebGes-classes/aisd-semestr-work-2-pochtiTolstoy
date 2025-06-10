@@ -5,7 +5,6 @@ app
 stats
 sfml
 dbg
-*.png
 *.csv
 
 # Prerequisites
